@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Typography, Card, CardBody } from '@material-tailwind/react';
 import { UserIcon, EnvelopeIcon, DocumentIcon, CalendarIcon } from '@heroicons/react/24/solid';
+import { useRouter } from 'next/navigation'; // Import useRouter
 
 interface User {
   userId: number;
@@ -24,26 +25,27 @@ const GetUsers = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [userToDelete, setUserToDelete] = useState<number | null>(null);
+  const router = useRouter(); // Initialize the router
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         const response = await fetch('http://localhost:5054/api/users');
         if (!response.ok) {
-          throw new Error('Échec du chargement des utilisateurs');
+          throw new Error('Failed to load users');
         }
         const data = await response.json();
 
-        console.log('Réponse de l’API :', data);
+        console.log('API Response:', data);
 
         if (Array.isArray(data)) {
           setUsers(data);
         } else {
-          console.error("Données reçues :", data);
-          throw new Error("Les données reçues ne sont pas un tableau d'utilisateurs");
+          console.error("Received data:", data);
+          throw new Error("Received data is not an array of users");
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+        setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
         setLoading(false);
       }
@@ -65,34 +67,39 @@ const GetUsers = () => {
       });
 
       if (!response.ok) {
-        throw new Error("Échec de la suppression de l’utilisateur");
+        throw new Error("Failed to delete user");
       }
 
       setUsers(users.filter((user) => user.userId !== userToDelete));
       setUserToDelete(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Une erreur est survenue");
+      setError(err instanceof Error ? err.message : "An error occurred");
     }
   };
 
+  const viewProfile = (userId: number) => {
+    // Navigate to the profile page
+    router.push(`/Pages/UserPages/Profile/${userId}`);
+  };
+
   if (loading) {
-    return <Typography className="text-center text-gray-600">Chargement des utilisateurs...</Typography>;
+    return <Typography className="text-center text-gray-600">Loading users...</Typography>;
   }
 
   if (error) {
-    return <Typography className="text-center text-red-500">Erreur : {error}</Typography>;
+    return <Typography className="text-center text-red-500">Error: {error}</Typography>;
   }
 
   return (
     <section className="w-full max-w-4xl mx-auto flex flex-col items-center px-4 py-10">
       <Typography variant="h2" className="text-center mb-2" color="blue-gray">
-        Liste des utilisateurs
+        User List
       </Typography>
       <Typography
         variant="lead"
         className="mb-16 w-full text-center font-normal !text-gray-500 lg:w-10/12"
       >
-        Explorez la liste des utilisateurs inscrits sur la plateforme.
+        Explore the list of users registered on the platform.
       </Typography>
       <div className="grid grid-cols-1 gap-6 w-full">
         {users.map((user) => (
@@ -116,7 +123,7 @@ const GetUsers = () => {
                     <div className="flex items-center gap-2">
                       <DocumentIcon className="h-5 w-5 text-gray-700" />
                       <Typography className="font-normal !text-gray-500">
-                        {user.role?.roleName || 'Aucun rôle'}
+                        {user.role?.roleName || 'No role'}
                       </Typography>
                     </div>
                     <div className="flex items-center gap-2">
@@ -124,7 +131,7 @@ const GetUsers = () => {
                       <Typography className="font-normal !text-gray-500">
                         {user.dateCreation
                           ? new Date(user.dateCreation).toLocaleDateString()
-                          : 'Non spécifié'}
+                          : 'Not specified'}
                       </Typography>
                     </div>
                     {user.cv?.cvFile && (
@@ -135,16 +142,22 @@ const GetUsers = () => {
                           rel="noopener noreferrer"
                           className="text-blue-500 hover:underline"
                         >
-                          Voir CV
+                          View CV
                         </a>
                       </div>
                     )}
                     <div className="flex items-center gap-2">
                       <button
+                        onClick={() => viewProfile(user.userId)}
+                        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                      >
+                        See Profile
+                      </button>
+                      <button
                         onClick={() => confirmDeleteUser(user.userId)}
                         className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
                       >
-                        Supprimer
+                        Delete
                       </button>
                     </div>
                   </div>
@@ -160,20 +173,20 @@ const GetUsers = () => {
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white p-6 rounded shadow-lg">
             <Typography variant="h5" color="blue-gray" className="mb-4">
-              Êtes-vous sûr de vouloir supprimer cet utilisateur ?
+              Are you sure you want to delete this user?
             </Typography>
             <div className="flex justify-end gap-4">
               <button
                 onClick={() => setUserToDelete(null)}
                 className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
               >
-                Annuler
+                Cancel
               </button>
               <button
                 onClick={deleteUser}
                 className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
               >
-                Supprimer
+                Delete
               </button>
             </div>
           </div>

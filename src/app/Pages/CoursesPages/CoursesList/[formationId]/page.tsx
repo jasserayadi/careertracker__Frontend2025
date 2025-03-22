@@ -1,5 +1,5 @@
 // Pages/CoursesPages/CoursesList/[formationId]/page.tsx
-'use client';
+
 
 import { useParams } from 'next/navigation';
 import CoursesList from '@/app/Components/CoursesComponent/CoursesList';

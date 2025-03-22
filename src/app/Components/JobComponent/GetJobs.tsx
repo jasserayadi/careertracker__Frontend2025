@@ -20,21 +20,21 @@ const GetJobs = () => {
       try {
         const response = await fetch('http://localhost:5054/api/jobs');
         if (!response.ok) {
-          throw new Error('Échec du chargement des jobs');
+          throw new Error('Failed to load jobs');
         }
         const data = await response.json();
 
-        console.log('Réponse de l’API :', data);
+        console.log('API Response:', data);
 
         // Check if the response is an array
         if (Array.isArray(data)) {
           setJobs(data); // Use the array directly
         } else {
-          console.error("Données reçues :", data);
-          throw new Error("Les données reçues ne sont pas un tableau de jobs");
+          console.error("Received data:", data);
+          throw new Error("Received data is not an array of jobs");
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+        setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
         setLoading(false);
       }
@@ -44,21 +44,21 @@ const GetJobs = () => {
   }, []);
 
   if (loading) {
-    return <p className="text-center text-gray-600">Chargement des jobs...</p>;
+    return <p className="text-center text-gray-600">Loading jobs...</p>;
   }
 
   if (error) {
-    return <p className="text-center text-red-500">Erreur : {error}</p>;
+    return <p className="text-center text-red-500">Error: {error}</p>;
   }
 
   return (
     <div className="container mx-auto px-10 py-20">
       <div className="grid place-items-center pb-20 text-center">
         <Typography variant="h2" color="blue-gray">
-          Liste des Jobs
+          Job Listings
         </Typography>
         <Typography variant="lead" className="mt-2 !text-gray-500 lg:w-5/12">
-          Explorez les opportunités disponibles et postulez dès maintenant.
+          Explore available opportunities and apply now.
         </Typography>
       </div>
       <div className="grid gap-6">
@@ -78,7 +78,7 @@ const GetJobs = () => {
                   </Typography>
                   <div className="flex flex-wrap items-center gap-x-20 gap-y-6">
                     <Typography variant="h6" color="blue-gray">
-                      Détails du Job
+                      Job Details
                     </Typography>
                     <hr className="w-72 bg-gray-500" />
                   </div>
@@ -92,7 +92,7 @@ const GetJobs = () => {
                         variant="paragraph"
                         className="font-normal !text-gray-500"
                       >
-                        Temps plein
+                        Full-time
                       </Typography>
                     </div>
                     <div className="flex items-center gap-4">
@@ -104,23 +104,26 @@ const GetJobs = () => {
                         variant="paragraph"
                         className="font-normal !text-gray-500"
                       >
-                        Télétravail possible
+                        Remote work possible
                       </Typography>
                     </div>
                   </div>
                 </div>
                 <div className="grid place-items-center lg:justify-end">
                   <Typography variant="h6" color="blue-gray">
-                    Postulez maintenant
+                    Apply Now
                   </Typography>
                   <Button color="gray" className="my-3">
-                    Postuler
+                    Apply
+                  </Button>
+                  <Button color="blue" className="my-3">
+                    See Profile
                   </Button>
                   <Typography
                     variant="small"
                     className="font-normal !text-gray-500"
                   >
-                    Offre valable jusqu'au 31/12/2024
+                    Offer valid until 12/31/2024
                   </Typography>
                 </div>
               </div>
@@ -133,3 +136,4 @@ const GetJobs = () => {
 };
 
 export default GetJobs;
+
