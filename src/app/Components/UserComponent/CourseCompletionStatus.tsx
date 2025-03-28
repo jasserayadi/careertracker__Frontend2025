@@ -10,8 +10,6 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   AcademicCapIcon,
-  ArrowDownIcon,
-  ArrowUpIcon,
 } from '@heroicons/react/24/solid';
 
 import BackgroundCard from '@/app/Components/background-card';
@@ -45,10 +43,10 @@ interface CompletionStatus {
 
 interface MoodleGradeItem {
   id: number;
-  itemname: string;
-  graderaw: number | null;
-  percentageformatted: string;
-  datesubmitted?: number;
+  itemName?: string;
+  gradeRaw?: number | null;
+  percentageformatted?: string | null;
+  dateSubmitted?: number | null;
 }
 
 function Option({ icon: Icon, title, children, showStatusIcon = false, isComplete }: OptionProps) {
@@ -102,14 +100,26 @@ const CourseCompletionStatus = () => {
   const [grades, setGrades] = useState<MoodleGradeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [sortConfig, setSortConfig] = useState<{key: keyof MoodleGradeItem; direction: 'asc' | 'desc'} | null>(null);
-
+  const [syncStatus, setSyncStatus] = useState<{ loading: boolean; error?: string; success?: boolean }>({ loading: false });
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         setError('');
+                                         
+        // First, sync enrollments
+        setSyncStatus({ loading: true });
+        const syncRes = await fetch(`http://localhost:5054/api/Inscription/SyncEnrollments/${courseId}`, {
+          method: 'POST'
+        });
         
+        if (!syncRes.ok) {
+          throw new Error('Failed to sync enrollments');
+        }
+        
+        setSyncStatus({ loading: false, success: true });
+        
+        // Then fetch completion status and grades
         const [completionRes, gradesRes] = await Promise.all([
           fetch(`http://localhost:5054/api/users/completion/${userId}/${courseId}`),
           fetch(`http://localhost:5054/api/users/grades/${courseId}/${userId}`)
@@ -125,10 +135,20 @@ const CourseCompletionStatus = () => {
           throw new Error('Completion status data not found');
         }
 
+        const safeGrades = (gradesData || []).map((grade: any) => ({
+          id: grade.id || 0,
+          itemName: grade.itemName || 'Unnamed Activity',
+          gradeRaw: grade.gradeRaw ?? null,
+          percentageformatted: grade.percentageformatted || '100.00 %',
+          dateSubmitted: grade.dateSubmitted ?? null
+        }));
+
         setCompletionStatus(completionData.completionStatus);
-        setGrades(gradesData || []);
+        setGrades(safeGrades);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
+        const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+        setError(errorMessage);
+        setSyncStatus({ loading: false, error: errorMessage });
       } finally {
         setLoading(false);
       }
@@ -137,42 +157,9 @@ const CourseCompletionStatus = () => {
     fetchData();
   }, [userId, courseId]);
 
-  const requestSort = (key: keyof MoodleGradeItem) => {
-    let direction: 'asc' | 'desc' = 'asc';
-    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
-    }
-    setSortConfig({ key, direction });
-  };
-
-  const sortedGrades = [...grades].sort((a, b) => {
-    if (!sortConfig) return 0;
-    
-    const aValue = a[sortConfig.key];
-    const bValue = b[sortConfig.key];
-    
-    if (aValue === null || aValue === undefined) return 1;
-    if (bValue === null || bValue === undefined) return -1;
-    
-    if (aValue < bValue) {
-      return sortConfig.direction === 'asc' ? -1 : 1;
-    }
-    if (aValue > bValue) {
-      return sortConfig.direction === 'asc' ? 1 : -1;
-    }
-    return 0;
-  });
-
-  const formatDate = (timestamp?: number) => {
+  const formatDate = (timestamp?: number | null) => {
     if (!timestamp) return 'Not submitted';
     return new Date(timestamp * 1000).toLocaleDateString();
-  };
-
-  const getSortIcon = (key: keyof MoodleGradeItem) => {
-    if (!sortConfig || sortConfig.key !== key) return null;
-    return sortConfig.direction === 'asc' 
-      ? <ArrowUpIcon className="h-4 w-4 ml-1 inline" />
-      : <ArrowDownIcon className="h-4 w-4 ml-1 inline" />;
   };
 
   if (loading) {
@@ -237,7 +224,7 @@ const CourseCompletionStatus = () => {
                   Progress
                 </Typography>
                 <Typography variant="paragraph">
-                  {completionStatus?.percentageCompletion || 0}%
+                  {completionStatus?.percentageCompletion?.toFixed(0) || 0}%
                 </Typography>
               </div>
             </div>
@@ -269,72 +256,60 @@ const CourseCompletionStatus = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                      onClick={() => requestSort('itemname')}
-                    >
-                      <span className="flex items-center">
-                        Activity
-                        {getSortIcon('itemname')}
-                      </span>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      ACTIVITY
                     </th>
-                    <th 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                      onClick={() => requestSort('graderaw')}
-                    >
-                      <span className="flex items-center">
-                        Grade
-                        {getSortIcon('graderaw')}
-                      </span>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      GRADE
                     </th>
-                    <th 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                      onClick={() => requestSort('percentageformatted')}
-                    >
-                      <span className="flex items-center">
-                        Percentage
-                        {getSortIcon('percentageformatted')}
-                      </span>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      PERCENTAGE
                     </th>
-                    <th 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                      onClick={() => requestSort('datesubmitted')}
-                    >
-                      <span className="flex items-center">
-                        Submitted
-                        {getSortIcon('datesubmitted')}
-                      </span>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      SUBMITTED
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {sortedGrades.map((grade) => (
-                    <tr key={grade.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <AcademicCapIcon className="h-5 w-5 text-blue-500 mr-2" />
-                          <Typography variant="small" className="font-medium text-gray-900">
-                            {grade.itemname}
+                  {grades.map((grade) => {
+                    const hasGrade = grade.gradeRaw !== null && grade.gradeRaw !== undefined;
+                    const gradeValue = hasGrade ? grade.gradeRaw?.toFixed(2) : 'N/A';
+                    const percentage = grade.percentageformatted || '100.00 %';
+                    const submittedStatus = grade.dateSubmitted ? 'Submitted' : 'Not submitted';
+
+                    return (
+                      <tr key={grade.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <input 
+                              type="checkbox" 
+                              checked={hasGrade}
+                              readOnly
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            />
+                            <Typography variant="small" className="font-medium text-gray-900 ml-2">
+                              {grade.itemName || 'Unnamed Activity'}
+                            </Typography>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <Typography variant="small" className="text-gray-500">
+                            {gradeValue}
                           </Typography>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Typography variant="small" className="text-gray-500">
-                          {grade.graderaw?.toFixed(2) ?? 'N/A'}
-                        </Typography>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Typography variant="small" className="text-gray-500">
-                          {grade.percentageformatted || 'N/A'}
-                        </Typography>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Typography variant="small" className="text-gray-500">
-                          {formatDate(grade.datesubmitted)}
-                        </Typography>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <Typography variant="small" className="text-gray-500">
+                            {percentage}
+                          </Typography>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <Typography variant="small" className="text-gray-500">
+                            {submittedStatus}
+                          </Typography>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
