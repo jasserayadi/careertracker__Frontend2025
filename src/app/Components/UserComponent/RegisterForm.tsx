@@ -1,140 +1,258 @@
-'use client'; // Mark this as a Client Component
+'use client';
 
-import { useState } from 'react';
+import React, { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import { Card, CardBody, Button, Typography } from '@material-tailwind/react';
+import { CheckIcon } from '@heroicons/react/24/outline';
 
-const RegisterForm = () => {
+export function RegisterForm() {
   const [username, setUsername] = useState('');
   const [firstname, setFirstname] = useState('');
   const [lastname, setLastname] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [email, setEmail] = useState('');
   const [cvFile, setCvFile] = useState<File | null>(null);
-  const [role, setRole] = useState<'Admin' | 'NewEmploye'>('NewEmploye'); // Default role
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const validatePassword = (pass: string) => {
+    const regex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{8,}$/;
+    return regex.test(pass);
+  };
 
-    // Validate required fields
-    if (!username || !firstname || !lastname || !password || !email || !cvFile) {
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError('');
+
+    if (!username || !firstname || !lastname || !password || !confirmPassword || !email || !cvFile) {
       setError('All fields are required.');
+      setIsSubmitting(false);
       return;
     }
 
-    // Create FormData object
+    if (password !== confirmPassword) {
+      setError('Password and confirmation password do not match.');
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!validatePassword(password)) {
+      setError('Password must have at least 8 characters, including 1 digit, 1 lowercase, 1 uppercase, and 1 special character.');
+      setIsSubmitting(false);
+      return;
+    }
+
     const formData = new FormData();
     formData.append('username', username);
     formData.append('firstname', firstname);
     formData.append('lastname', lastname);
     formData.append('password', password);
+    formData.append('confirmPassword', confirmPassword);
     formData.append('email', email);
-    formData.append('cvFile', cvFile); // Append the CV file
-    formData.append('role', role); // Append the role
+    formData.append('cvFile', cvFile);
 
     try {
       const response = await fetch('http://localhost:5054/api/users/register', {
         method: 'POST',
-        body: formData, // Send as form-data
+        body: formData,
       });
 
       if (response.ok) {
-        router.push('/login'); // Redirect to login page after successful registration
+        router.push('/login');
       } else {
         const data = await response.json();
-        setError(data.message || 'Erreur lors de l\'enregistrement.');
+        setError(data.message || 'Registration failed.');
       }
     } catch (err) {
-      setError('Erreur lors de la connexion au serveur.');
+      setError('Error connecting to the server. Please try again later.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
+  const REQUIREMENTS = [
+    'At least 8 characters',
+    '1 digit (0-9)',
+    '1 lowercase letter',
+    '1 uppercase letter',
+    '1 special character'
+  ];
+
   return (
-    <div className="min-h-screen flex items-center justify-center pt-20"> {/* Adjusted padding-top */}
-      <form onSubmit={handleSubmit} className="w-full max-w-md bg-white p-8 rounded-lg shadow-lg">
-        <h1 className="text-2xl font-bold text-center mb-6">Register</h1>
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">Username:</label>
-          <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-            required
-          />
+    <div className="grid min-h-screen place-items-center">
+      <section className="container mx-auto px-4 sm:px-10">
+        <div className="grid place-items-center pb-10 text-center">
+          <Typography variant="h2" color="blue-gray" className="text-3xl md:text-4xl">
+            Create Your Account
+          </Typography>
+          <Typography variant="lead" className="mt-2 !text-gray-500 lg:w-5/12 text-sm md:text-base">
+            Join our platform to access exclusive features and resources.
+          </Typography>
         </div>
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">First Name:</label>
-          <input
-            type="text"
-            value={firstname}
-            onChange={(e) => setFirstname(e.target.value)}
-            className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-            required
-          />
-        </div>
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">Last Name:</label>
-          <input
-            type="text"
-            value={lastname}
-            onChange={(e) => setLastname(e.target.value)}
-            className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-            required
-          />
-        </div>
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">Password:</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-            required
-          />
-        </div>
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">Email:</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-            required
-          />
-        </div>
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">CV File:</label>
-          <input
-            type="file"
-            onChange={(e) => setCvFile(e.target.files?.[0] || null)}
-            className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-            required
-          />
-        </div>
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">Role:</label>
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value as 'Admin' | 'NewEmploye')}
-            className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-            required
-          >
-            <option value="Admin">Admin</option>
-            <option value="NewEmploye">New Employee</option>
-          </select>
-        </div>
-        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-        <button
-          type="submit"
-          className="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-        >
-          Register
-        </button>
-      </form>
+        
+        <Card className="px-6 pb-5">
+          <CardBody>
+            {error && (
+              <Typography color="red" className="mb-4 text-center">
+                {error}
+              </Typography>
+            )}
+            
+            <form onSubmit={handleSubmit}>
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                {/* Username */}
+                <div>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Username"
+                      className="peer w-full rounded-[7px] border border-gray-300 bg-transparent px-3 py-2.5 font-sans text-sm font-normal text-blue-gray-700 outline outline-0 transition-all placeholder-shown:border focus:border-2 focus:border-blue-500 focus:outline-0"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Email */}
+                <div>
+                  <div className="relative">
+                    <input
+                      type="email"
+                      placeholder="Email"
+                      className="peer w-full rounded-[7px] border border-gray-300 bg-transparent px-3 py-2.5 font-sans text-sm font-normal text-blue-gray-700 outline outline-0 transition-all placeholder-shown:border focus:border-2 focus:border-blue-500 focus:outline-0"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* First Name */}
+                <div>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="First Name"
+                      className="peer w-full rounded-[7px] border border-gray-300 bg-transparent px-3 py-2.5 font-sans text-sm font-normal text-blue-gray-700 outline outline-0 transition-all placeholder-shown:border focus:border-2 focus:border-blue-500 focus:outline-0"
+                      value={firstname}
+                      onChange={(e) => setFirstname(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Last Name */}
+                <div>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Last Name"
+                      className="peer w-full rounded-[7px] border border-gray-300 bg-transparent px-3 py-2.5 font-sans text-sm font-normal text-blue-gray-700 outline outline-0 transition-all placeholder-shown:border focus:border-2 focus:border-blue-500 focus:outline-0"
+                      value={lastname}
+                      onChange={(e) => setLastname(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Password */}
+                <div>
+                  <div className="relative">
+                    <input
+                      type="password"
+                      placeholder="Password"
+                      className="peer w-full rounded-[7px] border border-gray-300 bg-transparent px-3 py-2.5 font-sans text-sm font-normal text-blue-gray-700 outline outline-0 transition-all placeholder-shown:border focus:border-2 focus:border-blue-500 focus:outline-0"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Confirm Password */}
+                <div>
+                  <div className="relative">
+                    <input
+                      type="password"
+                      placeholder="Confirm Password"
+                      className="peer w-full rounded-[7px] border border-gray-300 bg-transparent px-3 py-2.5 font-sans text-sm font-normal text-blue-gray-700 outline outline-0 transition-all placeholder-shown:border focus:border-2 focus:border-blue-500 focus:outline-0"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Password Requirements */}
+              <div className="mt-8">
+                <Typography variant="h6" color="blue-gray" className="mb-4">
+                  Password Requirements
+                </Typography>
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                  {REQUIREMENTS.map((req, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <CheckIcon className="h-4 w-4 text-gray-900" strokeWidth={3} />
+                      <Typography variant="small" className="font-normal !text-gray-500">
+                        {req}
+                      </Typography>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* CV Upload */}
+              <div className="mt-6">
+                <Typography variant="h6" color="blue-gray" className="mb-2">
+                  Upload Your CV
+                </Typography>
+                <input
+                  type="file"
+                  accept=".pdf,.doc,.docx"
+                  onChange={(e) => setCvFile(e.target.files?.[0] || null)}
+                  className="block w-full text-sm text-gray-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-md file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-blue-50 file:text-blue-700
+                    hover:file:bg-blue-100"
+                  required
+                />
+                <Typography variant="small" className="mt-1 font-normal !text-gray-500">
+                  Accepted formats: PDF, DOC, DOCX
+                </Typography>
+              </div>
+
+              {/* Submit Button */}
+              <div className="mt-8">
+                <button
+                  type="submit"
+                  className={`w-full rounded-lg bg-blue-600 py-3 px-6 text-center align-middle font-sans text-xs font-bold uppercase text-white shadow-md shadow-blue-500/20 transition-all hover:shadow-lg hover:shadow-blue-500/40 focus:opacity-[0.85] focus:shadow-none active:opacity-[0.85] active:shadow-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none ${
+                    isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
+                  }`}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Creating Account...' : 'Create Account'}
+                </button>
+              </div>
+            </form>
+
+            {/* Login Link */}
+            <Typography variant="small" className="mt-4 text-center font-normal !text-gray-500">
+              Already have an account?{' '}
+              <a href="/login" className="font-medium text-blue-500 transition-colors hover:text-blue-700">
+                Sign in
+              </a>
+            </Typography>
+          </CardBody>
+        </Card>
+      </section>
     </div>
   );
-};
+}
 
 export default RegisterForm;
