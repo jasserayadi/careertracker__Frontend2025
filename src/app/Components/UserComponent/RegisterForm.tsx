@@ -187,7 +187,7 @@ export function RegisterForm() {
                   </div>
                 </div>
               </div>
-
+            
               {/* Password Requirements */}
               <div className="mt-8">
                 <Typography variant="h6" color="blue-gray" className="mb-4">
@@ -204,28 +204,28 @@ export function RegisterForm() {
                   ))}
                 </div>
               </div>
-
-              {/* CV Upload */}
-              <div className="mt-6">
-                <Typography variant="h6" color="blue-gray" className="mb-2">
-                  Upload Your CV
-                </Typography>
-                <input
-                  type="file"
-                  accept=".pdf,.doc,.docx"
-                  onChange={(e) => setCvFile(e.target.files?.[0] || null)}
-                  className="block w-full text-sm text-gray-500
-                    file:mr-4 file:py-2 file:px-4
-                    file:rounded-md file:border-0
-                    file:text-sm file:font-semibold
-                    file:bg-blue-50 file:text-blue-700
-                    hover:file:bg-blue-100"
-                  required
-                />
-                <Typography variant="small" className="mt-1 font-normal !text-gray-500">
-                  Accepted formats: PDF, DOC, DOCX
-                </Typography>
-              </div>
+            
+            {/* CV Upload */}
+<div className="mt-6">
+  <Typography variant="h6" color="blue-gray" className="mb-2">
+    Upload Your CV
+  </Typography>
+  <input
+    type="file"
+    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif"
+    onChange={(e) => setCvFile(e.target.files?.[0] || null)}
+    className="block w-full text-sm text-gray-500
+      file:mr-4 file:py-2 file:px-4
+      file:rounded-md file:border-0
+      file:text-sm file:font-semibold
+      file:bg-blue-50 file:text-blue-700
+      hover:file:bg-blue-100"
+    required
+  />
+  <Typography variant="small" className="mt-1 font-normal !text-gray-500">
+    Accepted formats: PDF, DOC, DOCX, JPG, JPEG, PNG, GIF
+  </Typography>
+</div>
 
               {/* Submit Button */}
               <div className="mt-8">

@@ -1,7 +1,7 @@
 import { Footer, Navbar } from "@/app/Components";
 import { FixedPlugin } from "@/app/Components/fixed-plugin";
 import CreateJobForm from "@/app/Components/JobComponent/RegisterJob";
-import CarouselFeatures from "../../carousel-features/page";
+
 
 const CreateJobPage = () => {
   return (

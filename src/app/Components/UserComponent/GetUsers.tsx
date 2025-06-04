@@ -1,9 +1,9 @@
 'use client'; // Mark this as a Client Component
 
 import { useEffect, useState } from 'react';
-import { Typography, Card, CardBody } from '@material-tailwind/react';
+import { Typography, Card, CardBody, Input, Button } from '@material-tailwind/react';
 import { UserIcon, EnvelopeIcon, DocumentIcon, CalendarIcon } from '@heroicons/react/24/solid';
-import { useRouter } from 'next/navigation'; // Import useRouter
+import { useRouter } from 'next/navigation';
 
 interface User {
   userId: number;
@@ -25,7 +25,17 @@ const GetUsers = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [userToDelete, setUserToDelete] = useState<number | null>(null);
-  const router = useRouter(); // Initialize the router
+  const [userToUpdate, setUserToUpdate] = useState<User | null>(null);
+  const [updateForm, setUpdateForm] = useState({
+    username: '',
+    firstname: '',
+    lastname: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+  });
+  const [cvFile, setCvFile] = useState<File | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -58,6 +68,73 @@ const GetUsers = () => {
     setUserToDelete(userId);
   };
 
+  const prepareUpdateUser = (user: User) => {
+    setUserToUpdate(user);
+    setUpdateForm({
+      username: user.username,
+      firstname: user.firstname,
+      lastname: user.lastname,
+      email: user.email,
+      password: '',
+      confirmPassword: '',
+    });
+  };
+
+  const handleUpdateFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setUpdateForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setCvFile(e.target.files[0]);
+    }
+  };
+
+  const updateUser = async () => {
+    if (!userToUpdate) return;
+
+    try {
+      const formData = new FormData();
+      formData.append('username', updateForm.username);
+      formData.append('firstname', updateForm.firstname);
+      formData.append('lastname', updateForm.lastname);
+      formData.append('email', updateForm.email);
+      
+      if (updateForm.password) {
+        formData.append('password', updateForm.password);
+        formData.append('confirmPassword', updateForm.confirmPassword);
+      }
+      
+      if (cvFile) {
+        formData.append('cvFile', cvFile);
+      }
+
+      const response = await fetch(`http://localhost:5054/api/users/update/${userToUpdate.userId}`, {
+        method: 'PUT',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update user');
+      }
+
+      const updatedUser = await response.json();
+      
+      setUsers(users.map(user => 
+        user.userId === updatedUser.userId ? updatedUser : user
+      ));
+      
+      setUserToUpdate(null);
+      setCvFile(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    }
+  };
+
   const deleteUser = async () => {
     if (userToDelete === null) return;
 
@@ -78,7 +155,6 @@ const GetUsers = () => {
   };
 
   const viewProfile = (userId: number) => {
-    // Navigate to the profile page
     router.push(`/Pages/UserPages/Profile/${userId}`);
   };
 
@@ -154,6 +230,12 @@ const GetUsers = () => {
                         See Profile
                       </button>
                       <button
+                        onClick={() => prepareUpdateUser(user)}
+                        className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                      >
+                        Update
+                      </button>
+                      <button
                         onClick={() => confirmDeleteUser(user.userId)}
                         className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
                       >
@@ -168,7 +250,7 @@ const GetUsers = () => {
         ))}
       </div>
 
-      {/* Confirmation Modal */}
+      {/* Delete Confirmation Modal */}
       {userToDelete !== null && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white p-6 rounded shadow-lg">
@@ -187,6 +269,96 @@ const GetUsers = () => {
                 className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
               >
                 Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Update User Modal */}
+      {userToUpdate !== null && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded shadow-lg w-full max-w-md">
+            <Typography variant="h5" color="blue-gray" className="mb-4">
+              Update User: {userToUpdate.firstname} {userToUpdate.lastname}
+            </Typography>
+            
+            <div className="space-y-4">
+              <Input
+                label="Username"
+                name="username"
+                value={updateForm.username}
+                onChange={handleUpdateFormChange}
+              />
+              <Input
+                label="First Name"
+                name="firstname"
+                value={updateForm.firstname}
+                onChange={handleUpdateFormChange}
+              />
+              <Input
+                label="Last Name"
+                name="lastname"
+                value={updateForm.lastname}
+                onChange={handleUpdateFormChange}
+              />
+              <Input
+                label="Email"
+                name="email"
+                type="email"
+                value={updateForm.email}
+                onChange={handleUpdateFormChange}
+              />
+              <Input
+                label="Password (leave blank to keep current)"
+                name="password"
+                type="password"
+                value={updateForm.password}
+                onChange={handleUpdateFormChange}
+              />
+              {updateForm.password && (
+                <Input
+                  label="Confirm Password"
+                  name="confirmPassword"
+                  type="password"
+                  value={updateForm.confirmPassword}
+                  onChange={handleUpdateFormChange}
+                />
+              )}
+              
+              <div>
+                <Typography variant="small" className="mb-2">
+                  Update CV:
+                </Typography>
+                <input
+                  type="file"
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif"
+                  onChange={handleFileChange}
+                  className="block w-full text-sm text-gray-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-full file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-blue-50 file:text-blue-700
+                    hover:file:bg-blue-100"
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-4 mt-6">
+              <button
+                onClick={() => {
+                  setUserToUpdate(null);
+                  setCvFile(null);
+                }}
+                className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={updateUser}
+                className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+              >
+                Update
               </button>
             </div>
           </div>

@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useRef, useEffect } from "react";
 import { Typography, Card, CardBody, CardHeader, Button } from "@material-tailwind/react";
 import Image from "next/image";
@@ -6,7 +8,7 @@ interface CourseCardProps {
   img: string;
   title: string;
   desc: string;
-  buttonLabel: string;  // This should be something like "VIEW DETAILS"
+  buttonLabel: string;
 }
 
 export function CourseCard({ img, title, desc, buttonLabel }: CourseCardProps) {
@@ -61,7 +63,7 @@ export function CourseCard({ img, title, desc, buttonLabel }: CourseCardProps) {
                 }}
                 className="text-blue-500 hover:text-blue-700 text-sm font-medium mt-1 mb-3"
               >
-                {showFullDesc ? 'Show less' : 'Read more'}  {/* Changed from 'View more' */}
+                {showFullDesc ? 'Show less' : 'Read more'}
               </button>
             )}
           </div>
@@ -70,9 +72,9 @@ export function CourseCard({ img, title, desc, buttonLabel }: CourseCardProps) {
           <Button 
             color="gray" 
             size="sm" 
-            className="w-full uppercase"  // Added uppercase to match your screenshot
+            className="w-full uppercase"
           >
-            {buttonLabel}  {/* This should be "VIEW DETAILS" */}
+            {buttonLabel}
           </Button>
         </div>
       </CardBody>

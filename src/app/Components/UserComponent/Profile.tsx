@@ -88,39 +88,53 @@ const ProfilePage = ({ userId }: ProfilePageProps) => {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const [userResponse, coursesResponse, certificatesResponse] = await Promise.all([
-          fetch(`http://localhost:5054/api/users/id/${userId}`),
-          fetch(`http://localhost:5054/api/Inscription/ByUser/${userId}`),
-          fetch(`http://localhost:5054/api/certificates/user/${userId}`)
-        ]);
+        // Fetch user data
+        const userResponse = await fetch(`http://localhost:5054/api/users/id/${userId}`);
+        if (!userResponse.ok) throw new Error('Failed to fetch user profile');
+        const userData = await userResponse.json();
+        setUser(userData);
 
-        if (!userResponse.ok || !coursesResponse.ok) {
-          throw new Error('Failed to fetch user profile or courses');
+        // Try to fetch courses (but don't fail if this fails)
+        try {
+          const coursesResponse = await fetch(`http://localhost:5054/api/Inscription/ByUser/${userId}`);
+          if (coursesResponse.ok) {
+            const coursesData = await coursesResponse.json();
+            
+            const completionStatuses = await Promise.all(
+              coursesData.map(async (course: Course) => {
+                const isCompleted = await fetchCourseCompletion(course.moodleCourseId);
+                return { courseId: course.moodleCourseId, completed: isCompleted };
+              })
+            );
+
+            const completionMap = completionStatuses.reduce((acc, curr) => {
+              acc[curr.courseId] = curr.completed;
+              return acc;
+            }, {} as Record<number, boolean>);
+
+            setUser(prev => ({
+              ...prev!,
+              courses: coursesData.slice(0, 3),
+            }));
+            setAllCourses(coursesData);
+            setCourseCompletions(completionMap);
+          }
+        } catch (coursesError) {
+          console.error('Error fetching courses:', coursesError);
+          // Continue even if courses fail to load
         }
 
-        const userData = await userResponse.json();
-        const coursesData = await coursesResponse.json();
-        const certificatesData = certificatesResponse.ok ? await certificatesResponse.json() : [];
+        // Try to fetch certificates (but don't fail if this fails)
+        try {
+          const certificatesResponse = await fetch(`http://localhost:5054/api/certificates/user/${userId}`);
+          if (certificatesResponse.ok) {
+            setCertificates(await certificatesResponse.json());
+          }
+        } catch (certificatesError) {
+          console.error('Error fetching certificates:', certificatesError);
+          // Continue even if certificates fail to load
+        }
 
-        const completionStatuses = await Promise.all(
-          coursesData.map(async (course: Course) => {
-            const isCompleted = await fetchCourseCompletion(course.moodleCourseId);
-            return { courseId: course.moodleCourseId, completed: isCompleted };
-          })
-        );
-
-        const completionMap = completionStatuses.reduce((acc, curr) => {
-          acc[curr.courseId] = curr.completed;
-          return acc;
-        }, {} as Record<number, boolean>);
-
-        setUser({
-          ...userData,
-          courses: coursesData.slice(0, 3),
-        });
-        setCertificates(certificatesData);
-        setAllCourses(coursesData);
-        setCourseCompletions(completionMap);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
@@ -188,8 +202,7 @@ const ProfilePage = ({ userId }: ProfilePageProps) => {
             User Profile
           </Typography>
           
-          <Card className="w-full md:w-[600px] shadow-lg">{/* Removed mx-auto */}
-
+          <Card className="shadow-lg">
             <CardBody className="p-6">
               <div className="flex flex-col md:flex-row gap-6">
                 {/* User Avatar Section */}
@@ -249,145 +262,160 @@ const ProfilePage = ({ userId }: ProfilePageProps) => {
                   </div>
 
                   {/* Courses Section */}
-                  {user.courses && user.courses.length > 0 && (
-                    <div className="mt-6">
-                      <Typography variant="h4" color="blue-gray" className="mb-3">
-                        Enrolled Courses
-                      </Typography>
-                      <div className="space-y-3">
-                        {(showAllCourses ? allCourses : user.courses).map((course) => (
-                          <div
-                            key={course.formationId}
-                            className="flex items-center justify-between gap-3 cursor-pointer hover:bg-gray-50 p-3 rounded-lg transition-colors"
-                            onClick={() => handleCourseClick(course.moodleCourseId)}
-                          >
-                            <div className="flex items-center gap-3">
-                              <AcademicCapIcon className="h-5 w-5 text-blue-gray-500" />
-                              <div>
-                                <Typography className="font-semibold">
-                                  {course.fullname}
+                  <div className="mt-6">
+                    <Typography variant="h4" color="blue-gray" className="mb-3">
+                      Enrolled Courses
+                    </Typography>
+                    {allCourses.length > 0 ? (
+                      <>
+                        <div className="space-y-3">
+                          {(showAllCourses ? allCourses : allCourses.slice(0, 3)).map((course) => (
+                            <div
+                              key={course.formationId}
+                              className="flex items-center justify-between gap-3 cursor-pointer hover:bg-gray-50 p-3 rounded-lg transition-colors"
+                              onClick={() => handleCourseClick(course.moodleCourseId)}
+                            >
+                              <div className="flex items-center gap-3">
+                                <AcademicCapIcon className="h-5 w-5 text-blue-gray-500" />
+                                <div>
+                                  <Typography className="font-semibold">
+                                    {course.fullname}
                                 </Typography>
-                                <Typography variant="small" className="text-gray-600">
-                                  {course.shortname}
-                                </Typography>
+                                  <Typography variant="small" className="text-gray-600">
+                                    {course.shortname}
+                                  </Typography>
+                                </div>
                               </div>
+                              {courseCompletions[course.moodleCourseId] ? (
+                                <div className="flex items-center gap-1 text-green-500">
+                                  <CheckCircleIcon className="h-4 w-4" />
+                                  <Typography variant="small">Completed</Typography>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1 text-amber-500">
+                                  <XCircleIcon className="h-4 w-4" />
+                                  <Typography variant="small">In Progress</Typography>
+                                </div>
+                              )}
                             </div>
-                            {courseCompletions[course.moodleCourseId] ? (
-                              <div className="flex items-center gap-1 text-green-500">
-                                <CheckCircleIcon className="h-4 w-4" />
-                                <Typography variant="small">Completed</Typography>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-1 text-amber-500">
-                                <XCircleIcon className="h-4 w-4" />
-                                <Typography variant="small">In Progress</Typography>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                      
-                      {/* View All Courses Button */}
-                      {allCourses.length > 3 && (
-                        <button
-                          className="flex items-center gap-1 mt-3 text-blue-500 hover:text-blue-700 text-sm"
-                          onClick={toggleAllCourses}
-                        >
-                          {showAllCourses ? 'Show Less' : `View All (${allCourses.length})`}
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            strokeWidth={2}
-                            stroke="currentColor"
-                            className="h-4 w-4"
+                          ))}
+                        </div>
+                        
+                        {/* View All Courses Button */}
+                        {allCourses.length > 3 && (
+                          <button
+                            className="flex items-center gap-1 mt-3 text-blue-500 hover:text-blue-700 text-sm"
+                            onClick={toggleAllCourses}
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d={showAllCourses ? "M19.5 12h-15" : "M19.5 8.25l-7.5 7.5-7.5-7.5"}
-                            />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                  )}
+                            {showAllCourses ? 'Show Less' : `View All (${allCourses.length})`}
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              strokeWidth={2}
+                              stroke="currentColor"
+                              className="h-4 w-4"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d={showAllCourses ? "M19.5 12h-15" : "M19.5 8.25l-7.5 7.5-7.5-7.5"}
+                              />
+                            </svg>
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      <Typography className="text-gray-500 italic">
+                        No courses enrolled yet
+                      </Typography>
+                    )}
+                  </div>
 
-             {/* Action Buttons */}
-<div className="flex gap-3 mt-6">
-  <button
-    onClick={handleEditProfile}
-    className="flex items-center gap-1 bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded text-sm"
-  >
-    Edit Profile
-  </button>
-  <button
-    onClick={handleDeleteProfile}
-    className="flex items-center gap-1 bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded text-sm"
-  >
-    Delete Profile
-  </button>
-</div>
+                  {/* Action Buttons */}
+                  <div className="flex gap-3 mt-6">
+                    <button
+                      onClick={handleEditProfile}
+                      className="flex items-center gap-1 bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded text-sm"
+                    >
+                      Edit Profile
+                    </button>
+                    <button
+                      onClick={handleDeleteProfile}
+                      className="flex items-center gap-1 bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded text-sm"
+                    >
+                      Delete Profile
+                    </button>
+                  </div>
                 </div>
               </div>
             </CardBody>
           </Card>
         </div>
 
-{/* Right Column - Certificates */}
-{certificates.length > 0 && (
-  <div className="w-full lg:w-1/3 mt-8 lg:mt-0">
-    <Typography variant="h4" color="blue-gray" className="mb-4">
-      My Certificates
-    </Typography>
-    <div className="space-y-4">
-      {certificates.map((cert) => (
-        <Card key={cert.certificatId} className="hover:shadow-lg transition-shadow">
-          <CardBody className="p-4">
-            <div className="flex flex-col">
-              <div className="flex items-center gap-3 mb-3">
-                <DocumentIcon className="h-6 w-6 text-blue-500" />
-                <Typography variant="h6" className="truncate">
-                  {cert.certificatName}
-                </Typography>
-              </div>
-              
-              <div className="flex justify-between items-center mb-3">
-                <Typography variant="small">
-                  Issued: {new Date(cert.issueDate).toLocaleDateString()}
-                </Typography>
-                {cert.expirationDate && (
-                  <Typography variant="small">
-                    Valid until: {new Date(cert.expirationDate).toLocaleDateString()}
-                  </Typography>
-                )}
-              </div>
+        {/* Right Column - Certificates */}
+        {certificates.length > 0 ? (
+          <div className="w-full lg:w-1/3 mt-8 lg:mt-0">
+            <Typography variant="h4" color="blue-gray" className="mb-4">
+              My Certificates
+            </Typography>
+            <div className="space-y-4">
+              {certificates.map((cert) => (
+                <Card key={cert.certificatId} className="hover:shadow-lg transition-shadow">
+                  <CardBody className="p-4">
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-3 mb-3">
+                        <DocumentIcon className="h-6 w-6 text-blue-500" />
+                        <Typography variant="h6" className="truncate">
+                          {cert.certificatName}
+                        </Typography>
+                      </div>
+                      
+                      <div className="flex justify-between items-center mb-3">
+                        <Typography variant="small">
+                          Issued: {new Date(cert.issueDate).toLocaleDateString()}
+                        </Typography>
+                        {cert.expirationDate && (
+                          <Typography variant="small">
+                            Valid until: {new Date(cert.expirationDate).toLocaleDateString()}
+                          </Typography>
+                        )}
+                      </div>
 
-              <div className="flex gap-2">
-                {cert.pdfUrl && (
-                  <div 
-                    className="flex-1 flex items-center justify-center gap-1 bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-2 rounded cursor-pointer"
-                    onClick={() => handleDownloadCertificate(cert.certificatId)}
-                  >
-                    <ArrowDownTrayIcon className="h-4 w-4" />
-                    <span className="text-sm">Download</span>
-                  </div>
-                )}
-                <div 
-                  className="flex-1 flex items-center justify-center gap-1 bg-green-50 text-green-600 hover:bg-green-100 px-3 py-2 rounded cursor-pointer"
-                  onClick={() => handleVerifyCertificate(cert.verificationCode)}
-                >
-                  <DocumentIcon className="h-4 w-4" />
-                  <span className="text-sm">Verify</span>
-                </div>
-              </div>
+                      <div className="flex gap-2">
+                        {cert.pdfUrl && (
+                          <div 
+                            className="flex-1 flex items-center justify-center gap-1 bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-2 rounded cursor-pointer"
+                            onClick={() => handleDownloadCertificate(cert.certificatId)}
+                          >
+                            <ArrowDownTrayIcon className="h-4 w-4" />
+                            <span className="text-sm">Download</span>
+                          </div>
+                        )}
+                        <div 
+                          className="flex-1 flex items-center justify-center gap-1 bg-green-50 text-green-600 hover:bg-green-100 px-3 py-2 rounded cursor-pointer"
+                          onClick={() => handleVerifyCertificate(cert.verificationCode)}
+                        >
+                          <DocumentIcon className="h-4 w-4" />
+                          <span className="text-sm">Verify</span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardBody>
+                </Card>
+              ))}
             </div>
-          </CardBody>
-        </Card>
-      ))}
-    </div>
-  </div>
-)}
+          </div>
+        ) : (
+          <div className="w-full lg:w-1/3 mt-8 lg:mt-0">
+            <Typography variant="h4" color="blue-gray" className="mb-4">
+              My Certificates
+            </Typography>
+            <Typography className="text-gray-500 italic">
+              No certificates available
+            </Typography>
+          </div>
+        )}
       </div>
     </div>
   );

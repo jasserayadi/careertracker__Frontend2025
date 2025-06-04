@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Card, CardBody, Typography, Button, Chip, Input } from '@material-tailwind/react';
+import { Card, CardBody, Typography, Button } from '@material-tailwind/react';
 import { CheckIcon, TrashIcon, PencilIcon, PlusIcon } from '@heroicons/react/24/outline';
+import Chip from '@material-tailwind/react/components/Chip';
 
 interface Job {
   jobId: number;

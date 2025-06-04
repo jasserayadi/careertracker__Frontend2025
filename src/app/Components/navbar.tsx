@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Typography, Button } from "@material-tailwind/react";
 import { XMarkIcon, Bars3Icon, UserCircleIcon } from "@heroicons/react/24/solid";
 import Link from "next/link";
@@ -24,13 +24,13 @@ export function Navbar() {
   const [open, setOpen] = useState(false);
   const [isScrolling, setIsScrolling] = useState(false);
   const [user, setUser] = useState<{username: string} | null>(null);
+  const [jobsDropdownOpen, setJobsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const checkSession = async () => {
       try {
-        // Use hardcoded URL as fallback if env var fails
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5054';
-        
         const response = await fetch(`http://localhost:5054/api/Auth/session`, {
           credentials: 'include',
         });
@@ -60,15 +60,38 @@ export function Navbar() {
   };
 
   const handleOpen = () => setOpen(!open);
+  const toggleJobsDropdown = () => {
+    setJobsDropdownOpen(!jobsDropdownOpen);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setJobsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
-    const handleResize = () => window.innerWidth >= 960 && setOpen(false);
+    const handleResize = () => {
+      if (window.innerWidth >= 960) {
+        setOpen(false);
+      } else {
+        setJobsDropdownOpen(false);
+      }
+    };
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolling(window.scrollY > 0);
+    const handleScroll = () => {
+      setIsScrolling(window.scrollY > 0);
+      setJobsDropdownOpen(false);
+    };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -82,12 +105,53 @@ export function Navbar() {
           Career Tracker
         </Typography>
         
-        <ul className={`ml-10 hidden items-center gap-6 lg:flex ${
+        <ul className={`ml-10 hidden items-center gap-8 lg:flex ${
           isScrolling ? "text-gray-900" : "text-white"
         }`}>
-          <NavItem to="/">Home</NavItem>
-          <NavItem to="/about">About Us</NavItem>
-          <NavItem to="/contact">Contact Us</NavItem>
+          <NavItem to="/Pages">Home</NavItem>
+          
+          {/* Jobs Dropdown - Centered with click effects */}
+          <li className="relative flex justify-center" ref={dropdownRef}>
+            <div 
+              className={`cursor-pointer px-4 py-2 rounded-md transition-all duration-200 ${
+                jobsDropdownOpen ? (isScrolling ? "bg-gray-100 text-gray-900" : "bg-white bg-opacity-20") : ""
+              } hover:bg-opacity-10 hover:bg-white`}
+              onClick={toggleJobsDropdown}
+              onMouseEnter={() => setJobsDropdownOpen(true)}
+            >
+              Jobs
+            </div>
+            {jobsDropdownOpen && (
+              <div 
+                className={`absolute top-full mt-2 w-56 rounded-lg shadow-xl ${
+                  isScrolling ? "bg-white" : "bg-white bg-opacity-95 backdrop-blur-sm"
+                } border border-gray-200 animate-fadeIn origin-top`}
+                onMouseLeave={() => setJobsDropdownOpen(false)}
+              >
+                <div className="py-1">
+                  <Link href="/Pages/JobPages/Get-Jobs" passHref>
+                    <div 
+                      className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer transition-all duration-200 active:scale-95"
+                      onClick={() => setJobsDropdownOpen(false)}
+                    >
+                      View Jobs
+                    </div>
+                  </Link>
+                  <Link href="/Pages/JobPages/create-job" passHref>
+                    <div 
+                      className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer transition-all duration-200 active:scale-95"
+                      onClick={() => setJobsDropdownOpen(false)}
+                    >
+                      Create Job
+                    </div>
+                  </Link>
+                </div>
+              </div>
+            )}
+          </li>
+          
+          <NavItem to="/Pages/FormationPages/Get_Formations">Courses</NavItem>
+          <NavItem to="/Pages/UserPages/GetUsers">Users</NavItem>
         </ul>
 
         {/* Desktop Buttons */}
@@ -134,9 +198,43 @@ export function Navbar() {
       {open && (
         <div className="container mx-auto mt-4 rounded-lg bg-white px-6 py-5 lg:hidden">
           <ul className="flex flex-col gap-4 text-blue-gray-900">
-            <NavItem to="/">Home</NavItem>
-            <NavItem to="/about">About Us</NavItem>
-            <NavItem to="/contact">Contact Us</NavItem>
+            <NavItem to="/Pages">Home</NavItem>
+            
+            {/* Mobile Jobs Dropdown */}
+            <li>
+              <div 
+                className={`cursor-pointer px-4 py-3 rounded-md transition-all ${
+                  jobsDropdownOpen ? "bg-gray-100" : ""
+                }`}
+                onClick={toggleJobsDropdown}
+              >
+                Jobs
+              </div>
+              {jobsDropdownOpen && (
+                <div className="ml-4 mt-1 space-y-1 border-l-2 border-gray-200 pl-4">
+                  <Link href="/Pages/JobPages/Get-Jobs" passHref>
+                    <div 
+                      className="block py-2 px-3 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded-md transition-all active:scale-95"
+                      onClick={() => setJobsDropdownOpen(false)}
+                    >
+                      View Jobs
+                    </div>
+                  </Link>
+                  <Link href="/Pages/JobPages/create-job" passHref>
+                    <div 
+                      className="block py-2 px-3 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded-md transition-all active:scale-95"
+                      onClick={() => setJobsDropdownOpen(false)}
+                    >
+                      Create Job
+                    </div>
+                  </Link>
+                </div>
+              )}
+            </li>
+            
+            
+            <NavItem to="/Pages/FormationPages/Get_Formations">Courses</NavItem>
+            <NavItem to="/Pages/UserPages/GetUsers">Users</NavItem>
           </ul>
           
           {/* Mobile Buttons */}
@@ -154,24 +252,31 @@ export function Navbar() {
             ) : (
               <>
                 <Link href="/login" passHref>
-                  <div className="w-full">
-                    <Button color="gray" size="sm" className="w-full">
-                      Login
-                    </Button>
-                  </div>
+                  <Button color="gray" size="sm" className="w-full">
+                    Login
+                  </Button>
                 </Link>
                 <Link href="/register" passHref>
-                  <div className="w-full">
-                    <Button color="gray" size="sm" className="w-full">
-                      Register
-                    </Button>
-                  </div>
+                  <Button color="gray" size="sm" className="w-full">
+                    Register
+                  </Button>
                 </Link>
               </>
             )}
           </div>
         </div>
       )}
+
+      {/* Add these styles to your global CSS */}
+      <style jsx global>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-5px) scale(0.95); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.2s ease-out forwards;
+        }
+      `}</style>
     </nav>
   );
 }
