@@ -7,5 +7,7 @@ export * from "./other-courses/page";
 export * from "./online-course/page";
 export * from "./why-choose-us/page";
 export * from "./carousel-features/page";
+export * from "./HomeEmployee/page";
+
 
 

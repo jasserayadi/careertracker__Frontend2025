@@ -18,11 +18,14 @@ export function LoginForm() {
     setError('');
 
     try {
-      const response = await fetch(`http://localhost:5054/api/Auth/login`, {
+      const response = await fetch('http://localhost:5054/api/Auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
         body: JSON.stringify({ username, password }),
-        credentials: 'include'
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -30,9 +33,23 @@ export function LoginForm() {
         throw new Error(errorData.message || 'Login failed');
       }
 
-      window.location.href = '/Pages'; // Redirect after login
+      const userData = await response.json();
+      console.log('API Response:', userData); // Debug: Log response
+      const roleName = userData.role?.toLowerCase(); // Case-insensitive
+
+      if (roleName === 'admin') {
+        console.log('Redirecting to /Pages'); // Debug
+        router.push('http://localhost:3000/Pages');
+      } else if (roleName === 'newemploye') {
+        console.log('Redirecting to /Pages/HomeEmployee'); // Debug
+        router.push('http://localhost:3000/Pages/HomeEmployee');
+      } else {
+        console.warn('Unknown role:', roleName); // Debug
+        router.push('http://localhost:3000/Pages/HomeEmployee');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
+      console.error('Login error:', err);
     } finally {
       setIsSubmitting(false);
     }
@@ -49,7 +66,7 @@ export function LoginForm() {
             Sign in to access your account and continue your learning journey.
           </Typography>
         </div>
-        
+
         <Card className="px-6 pb-5">
           <CardBody>
             {error && (
@@ -57,9 +74,8 @@ export function LoginForm() {
                 {error}
               </Typography>
             )}
-            
+
             <form onSubmit={handleSubmit}>
-              {/* Username */}
               <div className="mb-6">
                 <div className="relative">
                   <input
@@ -74,11 +90,10 @@ export function LoginForm() {
                 </div>
               </div>
 
-              {/* Password */}
               <div className="mb-6">
                 <div className="relative">
                   <input
-                    type={showPassword ? "text" : "password"}
+                    type={showPassword ? 'text' : 'password'}
                     placeholder="Password"
                     className="peer w-full rounded-[7px] border border-gray-300 bg-transparent px-3 py-2.5 font-sans text-sm font-normal text-blue-gray-700 outline outline-0 transition-all placeholder-shown:border focus:border-2 focus:border-blue-500 focus:outline-0"
                     value={password}
@@ -100,7 +115,6 @@ export function LoginForm() {
                 </div>
               </div>
 
-              {/* Submit Button */}
               <div className="mt-8">
                 <button
                   type="submit"
@@ -114,7 +128,6 @@ export function LoginForm() {
               </div>
             </form>
 
-            {/* Links */}
             <div className="mt-6 flex flex-col items-center justify-center gap-2 sm:flex-row sm:gap-4">
               <Typography variant="small" className="font-normal !text-gray-500">
                 Don't have an account?{' '}

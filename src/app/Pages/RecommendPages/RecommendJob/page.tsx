@@ -62,10 +62,24 @@ interface FormationRecommendation {
   matchScore: number;
 }
 
+interface LearningStep {
+  step: string;
+  description: string;
+  priority: number;
+  estimatedHours: number;
+}
+
+interface AiLearningPath {
+  skill: string;
+  steps: LearningStep[];
+  totalEstimatedHours: number;
+}
+
 interface LearningPath {
   matchedSkills: string[];
   missingSkills: string[];
   recommendedFormations: FormationRecommendation[];
+  aiLearningPaths: AiLearningPath[];
 }
 
 interface AssignJobRequest {
@@ -122,6 +136,16 @@ const styles = `
 
   .gray-chip:hover {
     background-color: rgb(107 114 128 / 0.2);
+  }
+
+  .blue-chip {
+    --tw-bg-opacity: 1;
+    background-color: rgb(59 130 246 / 0.1);
+    color: rgb(59 130 246);
+  }
+
+  .blue-chip:hover {
+    background-color: rgb(59 130 246 / 0.2);
   }
 `;
 
@@ -287,6 +311,9 @@ const GetUsers = () => {
       const data = await fetchLearningPath(userId);
       setLearningPath(data);
       setOpenLearningPath(true);
+      data.recommendedFormations.forEach((formation: FormationRecommendation) => {
+        animatePercentage(formation.formationId, formation.matchScore * 100);
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error loading learning path');
     } finally {
@@ -446,7 +473,7 @@ const GetUsers = () => {
         ))}
       </div>
 
-               <Dialog
+      <Dialog
         open={openRecommendations}
         handler={() => setOpenRecommendations(false)}
         size="lg"
@@ -610,164 +637,255 @@ const GetUsers = () => {
         open={openLearningPath}
         handler={() => setOpenLearningPath(false)}
         size="lg"
-        className="max-h-[80vh] overflow-hidden"
+        className="bg-white rounded-lg shadow-xl"
       >
-        <DialogHeader
-          className="flex justify-between items-center border-b"
-          style={{ backgroundColor: 'rgb(12, 16, 33)' }}
-        >
-          <div>
-            <Typography variant="h4" className="text-white">
-              Learning Path
-            </Typography>
-            <Typography variant="small" className="text-gray-300">
-              {users.find(u => u.userId === selectedUser)?.firstname}{' '}
-              {users.find(u => u.userId === selectedUser)?.lastname}
-            </Typography>
+        <DialogHeader className="bg-gray-50 border-b border-gray-200 rounded-t-lg">
+          <div className="flex justify-between items-center w-full">
+            <div>
+              <Typography variant="h5" className="text-gray-900">
+                Learning Path
+              </Typography>
+              <Typography variant="small" className="text-gray-500">
+                {users.find(u => u.userId === selectedUser)?.firstname}{' '}
+                {users.find(u => u.userId === selectedUser)?.lastname}
+              </Typography>
+            </div>
+            <Button
+              variant="text"
+              size="sm"
+              onClick={() => setOpenLearningPath(false)}
+              className="text-gray-500 hover:bg-gray-100 rounded-full p-2"
+            >
+              <XMarkIcon className="h-5 w-5" />
+            </Button>
           </div>
-          <Button
-            variant="text"
-            size="sm"
-            onClick={() => setOpenLearningPath(false)}
-            className="p-1 text-white hover:bg-white/10"
-          >
-            <XMarkIcon className="h-5 w-5" />
-          </Button>
         </DialogHeader>
 
-        <DialogBody className="overflow-y-auto p-4">
+        <DialogBody className="p-0 overflow-y-auto max-h-[70vh]">
           {learningPathLoading ? (
             <div className="flex justify-center items-center h-40">
               <Spinner className="h-10 w-10" />
             </div>
           ) : learningPath ? (
-            <div className="space-y-6">
-              <div>
-                <Typography variant="h6" className="text-white mb-2">
+            <div className="divide-y divide-gray-200">
+              <div className="p-6 hover:bg-gray-50 transition-colors">
+                <Typography variant="h6" className="font-semibold text-gray-900 mb-4">
                   Matched Skills
                 </Typography>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 mb-4">
                   {learningPath.matchedSkills.length > 0 ? (
                     learningPath.matchedSkills.map((skill, index) => (
-                      <Chip
-                        key={`${skill}-${index}`}
-                        value={skill}
-                        color="green"
-                        size="sm"
-                      />
+                      <Tooltip key={`${skill}-${index}`} content={`Matched skill: ${skill}`}>
+                        <Chip
+                          value={skill}
+                          color="green"
+                          className="text-xs px-2 py-1"
+                        />
+                      </Tooltip>
                     ))
                   ) : (
-                    <Typography className="text-gray-300">
+                    <Typography className="text-gray-500">
                       No matched skills
                     </Typography>
                   )}
                 </div>
               </div>
 
-              <div>
-                <Typography variant="h6" className="text-white mb-2">
+              <div className="p-6 hover:bg-gray-50 transition-colors">
+                <Typography variant="h6" className="font-semibold text-gray-900 mb-4">
                   Missing Skills
                 </Typography>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 mb-4">
                   {learningPath.missingSkills.length > 0 ? (
                     learningPath.missingSkills.map((skill, index) => (
-                      <Chip
-                        key={`${skill}-${index}`}
-                        value={skill}
-                        className="red-chip"
-                        size="sm"
-                        variant="outlined"
-                      />
+                      <Tooltip key={`${skill}-${index}`} content={`Missing skill: ${skill}`}>
+                        <Chip
+                          value={skill}
+                          color="red"
+                          variant="outlined"
+                          className="text-xs px-2 py-1 border-red-300 text-red-600"
+                        />
+                      </Tooltip>
                     ))
                   ) : (
-                    <Typography className="text-gray-300">
+                    <Typography className="text-gray-500">
                       No missing skills
                     </Typography>
                   )}
                 </div>
               </div>
 
-              <div>
-                <Typography variant="h6" className="text-white mb-2">
+              <div className="p-6 hover:bg-gray-50 transition-colors">
+                <Typography variant="h6" className="font-semibold text-gray-900 mb-4">
                   Recommended Formations
                 </Typography>
                 {learningPath.recommendedFormations.length > 0 ? (
                   learningPath.recommendedFormations.map((formation) => (
-                    <Card
-                      key={formation.formationId}
-                      className="p-4 mb-4"
-                      style={{ backgroundColor: 'rgb(17, 24, 39)' }}
-                    >
-                      <Typography variant="h5" className="text-white mb-2">
-                        {formation.fullname}
-                      </Typography>
-                      <div className="mb-4">
-                        <Typography variant="small" className="text-gray-400 mb-1">
-                          Match Score
-                        </Typography>
-                        <Progress
-                          value={animatedPercentages[formation.formationId] || 0}
-                          className="progress-bar"
-                          style={{ '--progress-width': `${formation.matchScore * 100}%` } as any}
-                        />
-                        <Typography className="text-white percentage-text mt-1">
-                          {Math.round(animatedPercentages[formation.formationId] || 0)}%
-                        </Typography>
-                      </div>
-                      <Typography variant="small" className="text-gray-300 mb-2">
-                        {formation.summary}
-                      </Typography>
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        {formation.matchedSkills.map((skill, index) => (
-                          <Chip
-                            key={`${skill}-${index}`}
-                            value={skill}
-                            color="green"
-                            size="sm"
-                          />
-                        ))}
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <Typography variant="small" className="text-gray-400 mr-2">
-                          Courses:
-                        </Typography>
-                        {formation.courseNames.length > 0 ? (
-                          formation.courseNames.map((course, index) => (
-                            <Chip
-                              key={`${course}-${index}`}
-                              value={course}
-                              className="gray-chip"
-                              size="sm"
-                            />
-                          ))
-                        ) : (
-                          <Typography className="text-gray-300">
-                            No courses available
+                    <div key={formation.formationId} className="p-6 hover:bg-gray-50 transition-colors">
+                      <div className="flex flex-col space-y-4">
+                        <div className="flex justify-between items-start">
+                          <Typography variant="h6" className="font-semibold text-gray-900">
+                            {formation.fullname}
                           </Typography>
-                        )}
+                          <Button
+                            size="sm"
+                            color="blue"
+                            onClick={() => window.open(`http://localhost/Mymoodle/user/index.php?id=${formation.formationId}`, '_blank')}
+                            className="flex items-center gap-1"
+                          >
+                            Enroll in Moodle
+                          </Button>
+                        </div>
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <Typography variant="small" className="font-medium text-gray-500">
+                              Match Score
+                            </Typography>
+                            <Typography variant="small" className="font-bold text-blue-600">
+                              {Math.round(animatedPercentages[formation.formationId] || 0)}%
+                            </Typography>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2.5">
+                            <div
+                              className="h-2.5 rounded-full bg-gradient-to-r from-blue-400 to-blue-600"
+                              style={{
+                                width: `${animatedPercentages[formation.formationId] || 0}%`,
+                                transition: 'width 0.3s ease'
+                              }}
+                            ></div>
+                          </div>
+                        </div>
+                        <Typography className="text-gray-600 text-sm">
+                          {formation.summary}
+                        </Typography>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Typography variant="small" className="font-semibold text-gray-700 mb-2">
+                              Matched Skills ({formation.matchedSkills.length})
+                            </Typography>
+                            <div className="flex flex-wrap gap-2">
+                              {formation.matchedSkills.map((skill, index) => (
+                                <Tooltip key={`${skill}-${index}`} content={`Matched skill: ${skill}`}>
+                                  <Chip
+                                    value={skill}
+                                    color="green"
+                                    className="text-xs px-2 py-1"
+                                  />
+                                </Tooltip>
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <Typography variant="small" className="font-semibold text-gray-700 mb-2">
+                              Courses
+                            </Typography>
+                            <div className="flex flex-wrap gap-2">
+                              {formation.courseNames.map((course, index) => (
+                                <Tooltip key={`${course}-${index}`} content={`Course: ${course}`}>
+                                  <Chip
+                                    value={course}
+                                    className="gray-chip"
+                                    size="sm"
+                                  />
+                                </Tooltip>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    </Card>
+                    </div>
                   ))
                 ) : (
-                  <Typography className="text-gray-300">
-                    No recommended formations
-                  </Typography>
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <DocumentIcon className="h-12 w-12 text-gray-400 mb-4" />
+                    <Typography variant="h5" className="mb-2 text-gray-700">
+                      No Recommended Formations
+                    </Typography>
+                    <Typography className="text-gray-500 max-w-md">
+                      There are currently no formation recommendations available for this user.
+                    </Typography>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-6 hover:bg-gray-50 transition-colors">
+                <Typography variant="h6" className="font-semibold text-gray-900 mb-4">
+                  AI-Generated Learning Paths
+                </Typography>
+                {learningPath.aiLearningPaths.length > 0 ? (
+                  learningPath.aiLearningPaths.map((path, index) => (
+                    <div key={`${path.skill}-${index}`} className="p-6 hover:bg-gray-50 transition-colors">
+                      <div className="flex flex-col space-y-4">
+                        <div className="flex justify-between items-start">
+                          <Typography variant="h6" className="font-semibold text-gray-900">
+                            Learning Path for {path.skill}
+                          </Typography>
+                        </div>
+                        <Typography variant="small" className="text-gray-600">
+                          Total Estimated Hours: {path.totalEstimatedHours}
+                        </Typography>
+                        {path.steps.map((step, stepIndex) => (
+                          <div key={`${step.step}-${stepIndex}`} className="mb-2">
+                            <Typography variant="small" className="text-gray-900 font-medium">
+                              Step {step.priority}: {step.step}
+                            </Typography>
+                            <Typography variant="small" className="text-gray-600">
+                              {step.description}
+                            </Typography>
+                            <Typography variant="small" className="text-gray-500">
+                              Estimated Hours: {step.estimatedHours}
+                            </Typography>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <DocumentIcon className="h-12 w-12 text-gray-400 mb-4" />
+                    <Typography variant="h5" className="mb-2 text-gray-700">
+                      No AI-Generated Learning Paths
+                    </Typography>
+                    <Typography className="text-gray-500 max-w-md">
+                      There are currently no AI-generated learning paths available for this user.
+                    </Typography>
+                  </div>
                 )}
               </div>
             </div>
           ) : (
-            <Typography className="text-gray-300 text-center">
-              No learning path available
-            </Typography>
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <DocumentIcon className="h-12 w-12 text-gray-400 mb-4" />
+              <Typography variant="h5" className="mb-2 text-gray-700">
+                No Learning Path Available
+              </Typography>
+              <Typography className="text-gray-500 max-w-md">
+                No learning path could be generated for this user.
+              </Typography>
+            </div>
           )}
         </DialogBody>
-        <DialogFooter>
+
+        <DialogFooter className="bg-gray-50 border-t border-gray-200 rounded-b-lg px-6 py-4">
           <Button
             variant="text"
-            color="red"
+            color="gray"
             onClick={() => setOpenLearningPath(false)}
+            className="mr-2"
           >
             Close
+          </Button>
+          <Button
+            onClick={refreshData}
+            disabled={refreshLoading}
+            className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700"
+          >
+            {refreshLoading ? (
+              <ArrowPathIcon className="h-4 w-4 animate-spin" />
+            ) : (
+              <ArrowPathIcon className="h-4 w-4" />
+            )}
+            Refresh
           </Button>
         </DialogFooter>
       </Dialog>

@@ -61,7 +61,7 @@ interface ProfilePageProps {
   userId: number;
 }
 
-const ProfilePage = ({ userId }: ProfilePageProps) => {
+const EmpProfilePage = ({ userId }: ProfilePageProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -168,7 +168,7 @@ const ProfilePage = ({ userId }: ProfilePageProps) => {
   }, [userId]);
 
   const handleCourseClick = (courseId: number) => {
-    router.push(`/Pages/UserPages/CourseCompletionStatus/${userId}/${courseId}`);
+    router.push(`/Pages/UserPages/EmpCourseCompletionStatus/${userId}/${courseId}`);
   };
 
   const toggleAllCourses = () => setShowAllCourses(!showAllCourses);
@@ -435,4 +435,4 @@ const ProfilePage = ({ userId }: ProfilePageProps) => {
   );
 };
 
-export default ProfilePage;
+export default EmpProfilePage;

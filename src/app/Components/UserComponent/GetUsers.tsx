@@ -18,6 +18,10 @@ interface User {
   cv?: {
     cvFile: string;
   };
+  job?: {
+    jobId: number;
+    jobName: string;
+  };
 }
 
 const GetUsers = () => {
@@ -82,9 +86,9 @@ const GetUsers = () => {
 
   const handleUpdateFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setUpdateForm(prev => ({
+    setUpdateForm((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -103,31 +107,36 @@ const GetUsers = () => {
       formData.append('firstname', updateForm.firstname);
       formData.append('lastname', updateForm.lastname);
       formData.append('email', updateForm.email);
-      
+
       if (updateForm.password) {
         formData.append('password', updateForm.password);
         formData.append('confirmPassword', updateForm.confirmPassword);
       }
-      
+
       if (cvFile) {
         formData.append('cvFile', cvFile);
       }
 
-      const response = await fetch(`http://localhost:5054/api/users/update/${userToUpdate.userId}`, {
-        method: 'PUT',
-        body: formData,
-      });
+      const response = await fetch(
+        `http://localhost:5054/api/users/update/${userToUpdate.userId}`,
+        {
+          method: 'PUT',
+          body: formData,
+        }
+      );
 
       if (!response.ok) {
         throw new Error('Failed to update user');
       }
 
       const updatedUser = await response.json();
-      
-      setUsers(users.map(user => 
-        user.userId === updatedUser.userId ? updatedUser : user
-      ));
-      
+
+      setUsers((users) =>
+        users.map((user) =>
+          user.userId === updatedUser.userId ? updatedUser : user
+        )
+      );
+
       setUserToUpdate(null);
       setCvFile(null);
     } catch (err) {
@@ -139,18 +148,21 @@ const GetUsers = () => {
     if (userToDelete === null) return;
 
     try {
-      const response = await fetch(`http://localhost:5054/api/users/delete/${userToDelete}`, {
-        method: 'DELETE',
-      });
+      const response = await fetch(
+        `http://localhost:5054/api/users/delete/${userToDelete}`,
+        {
+          method: 'DELETE',
+        }
+      );
 
       if (!response.ok) {
-        throw new Error("Failed to delete user");
+        throw new Error('Failed to delete user');
       }
 
-      setUsers(users.filter((user) => user.userId !== userToDelete));
+      setUsers((users) => users.filter((user) => user.userId !== userToDelete));
       setUserToDelete(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      setError(err instanceof Error ? err.message : 'An error occurred');
     }
   };
 
@@ -159,11 +171,17 @@ const GetUsers = () => {
   };
 
   if (loading) {
-    return <Typography className="text-center text-gray-600">Loading users...</Typography>;
+    return (
+      <Typography className="text-center text-gray-600">
+        Loading users...
+      </Typography>
+    );
   }
 
   if (error) {
-    return <Typography className="text-center text-red-500">Error: {error}</Typography>;
+    return (
+      <Typography className="text-center text-red-500">Error: {error}</Typography>
+    );
   }
 
   return (
@@ -282,7 +300,7 @@ const GetUsers = () => {
             <Typography variant="h5" color="blue-gray" className="mb-4">
               Update User: {userToUpdate.firstname} {userToUpdate.lastname}
             </Typography>
-            
+
             <div className="space-y-4">
               <Input
                 label="Username"
@@ -325,7 +343,7 @@ const GetUsers = () => {
                   onChange={handleUpdateFormChange}
                 />
               )}
-              
+
               <div>
                 <Typography variant="small" className="mb-2">
                   Update CV:
@@ -343,7 +361,7 @@ const GetUsers = () => {
                 />
               </div>
             </div>
-            
+
             <div className="flex justify-end gap-4 mt-6">
               <button
                 onClick={() => {
