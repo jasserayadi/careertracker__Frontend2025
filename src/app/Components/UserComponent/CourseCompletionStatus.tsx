@@ -101,6 +101,7 @@ const CourseCompletionStatus = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [syncStatus, setSyncStatus] = useState<{ loading: boolean; error?: string; success?: boolean }>({ loading: false });
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -318,13 +319,13 @@ const CourseCompletionStatus = () => {
       </div>
 
       {/* Activity Completion */}
-      {completionStatus?.completions && completionStatus.completions.length > 0 && (
-        <div className="w-full">
-          <Typography variant="h3" className="mb-6" color="blue-gray">
-            Activity Completion
-          </Typography>
-          
-          {completionStatus.completions.map((completion, index) => {
+      <div className="w-full">
+        <Typography variant="h3" className="mb-6" color="blue-gray">
+          Activity Completion
+        </Typography>
+        
+        {completionStatus?.completions && completionStatus.completions.length > 0 ? (
+          completionStatus.completions.map((completion, index) => {
             const { text, href } = extractActivityLink(completion.details.criteria);
 
             return (
@@ -402,9 +403,15 @@ const CourseCompletionStatus = () => {
                 )}
               </div>
             );
-          })}
-        </div>
-      )}
+          })
+        ) : (
+          <BackgroundCard title="No Activities">
+            <Typography variant="paragraph" className="font-normal text-gray-700 text-center py-8">
+              No completion activities or tests are available for this course.
+            </Typography>
+          </BackgroundCard>
+        )}
+      </div>
     </section>
   );
 };

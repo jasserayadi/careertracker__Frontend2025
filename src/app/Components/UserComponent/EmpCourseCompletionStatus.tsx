@@ -49,6 +49,13 @@ interface MoodleGradeItem {
   dateSubmitted?: number | null;
 }
 
+interface FeedbackData {
+  userId: number;
+  formationId: number;
+  rate: number;
+  message: string;
+}
+
 function Option({ icon: Icon, title, children, showStatusIcon = false, isComplete }: OptionProps) {
   return (
     <div className="flex gap-4">
@@ -91,6 +98,88 @@ function extractActivityLink(criteria: string): { text: string; href: string } {
   }
 }
 
+const StarRating = ({ value, onChange }: { value: number; onChange: (rating: number) => void }) => {
+  const [hover, setHover] = useState(0);
+
+  const renderStar = (index: number) => {
+    const rating = hover || value;
+    if (index < Math.floor(rating)) {
+      // Full star
+      return (
+        <svg
+          key={index}
+          className="w-6 h-6 fill-yellow-400"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path d="M12 2l2.582 5.233 5.778.798-4.189 4.077.989 5.767L12 17.667l-5.16 2.208.989-5.767-4.189-4.077 5.778-.798z" />
+        </svg>
+      );
+    } else if (index === Math.floor(rating) && rating % 1 !== 0) {
+      // Partial star
+      const fillPercentage = (rating % 1) * 100;
+      return (
+        <svg
+          key={index}
+          className="w-6 h-6"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <defs>
+            <clipPath id={`clip-${index}`}>
+              <rect x="0" y="0" width={`${fillPercentage}%`} height="24" />
+            </clipPath>
+          </defs>
+          <path
+            d="M12 2l2.582 5.233 5.778.798-4.189 4.077.989 5.767L12 17.667l-5.16 2.208.989-5.767-4.189-4.077 5.778-.798z"
+            fill="yellow-400"
+            clipPath={`url(#clip-${index})`}
+          />
+          <path
+            d="M12 2l2.582 5.233 5.778.798-4.189 4.077.989 5.767L12 17.667l-5.16 2.208.989-5.767-4.189-4.077 5.778-.798z"
+            fill="none"
+            stroke="yellow-400"
+            strokeWidth="1"
+          />
+        </svg>
+      );
+    } else {
+      // Outline star
+      return (
+        <svg
+          key={index}
+          className="w-6 h-6"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M12 2l2.582 5.233 5.778.798-4.189 4.077.989 5.767L12 17.667l-5.16 2.208.989-5.767-4.189-4.077 5.778-.798z"
+            fill="none"
+            stroke="yellow-400"
+            strokeWidth="1"
+          />
+        </svg>
+      );
+    }
+  };
+
+  return (
+    <div className="flex gap-1">
+      {[0, 1, 2, 3, 4].map((index) => (
+        <span
+          key={index}
+          onMouseEnter={() => setHover(index + 1)}
+          onMouseLeave={() => setHover(0)}
+          onClick={() => onChange(index + 1)} // Updated to allow up to 5
+          className="cursor-pointer"
+        >
+          {renderStar(index)}
+        </span>
+      ))}
+    </div>
+  );
+};
+
 const EmpCourseCompletionStatus = () => {
   const params = useParams();
   const userId = params.userId as string;
@@ -101,13 +190,21 @@ const EmpCourseCompletionStatus = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [syncStatus, setSyncStatus] = useState<{ loading: boolean; error?: string; success?: boolean }>({ loading: false });
+  const [feedback, setFeedback] = useState<FeedbackData>({
+    userId: parseInt(userId),
+    formationId: parseInt(courseId),
+    rate: 0,
+    message: '',
+  });
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         setError('');
                                          
-        // First, sync enrollments
         setSyncStatus({ loading: true });
         const syncRes = await fetch(`http://localhost:5054/api/Inscription/SyncEnrollments/${courseId}`, {
           method: 'POST'
@@ -119,7 +216,6 @@ const EmpCourseCompletionStatus = () => {
         
         setSyncStatus({ loading: false, success: true });
         
-        // Then fetch completion status and grades
         const [completionRes, gradesRes] = await Promise.all([
           fetch(`http://localhost:5054/api/users/completion/${userId}/${courseId}`),
           fetch(`http://localhost:5054/api/users/grades/${courseId}/${userId}`)
@@ -160,6 +256,28 @@ const EmpCourseCompletionStatus = () => {
   const formatDate = (timestamp?: number | null) => {
     if (!timestamp) return 'Not submitted';
     return new Date(timestamp * 1000).toLocaleDateString();
+  };
+
+  const handleFeedbackSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('http://localhost:5054/api/Feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(feedback),
+      });
+
+      if (res.ok) {
+        setFeedbackSubmitted(true);
+        setFeedback({ ...feedback, rate: 0, message: '' });
+      } else {
+        throw new Error('Failed to submit feedback');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred while submitting feedback');
+    }
   };
 
   if (loading) {
@@ -247,12 +365,12 @@ const EmpCourseCompletionStatus = () => {
       {/* Grades Section */}
       <div className="w-full mb-16">
         <BackgroundCard title="Grades Overview">
-          {grades.length === 0 ? (
-            <Typography variant="paragraph" className="font-normal text-gray-700 text-center py-8">
-              No grade items available for this course
-            </Typography>
-          ) : (
-            <div className="overflow-x-auto">
+          <div className="overflow-x-auto">
+            {grades.length === 0 ? (
+              <Typography variant="paragraph" className="font-normal text-gray-700 text-center py-8">
+                No grade items available for this course
+              </Typography>
+            ) : (
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
@@ -312,8 +430,8 @@ const EmpCourseCompletionStatus = () => {
                   })}
                 </tbody>
               </table>
-            </div>
-          )}
+            )}
+          </div>
         </BackgroundCard>
       </div>
 
@@ -403,6 +521,84 @@ const EmpCourseCompletionStatus = () => {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Feedback Button */}
+      <div className="w-full mb-16">
+        <BackgroundCard>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-200"
+          >
+            Provide Feedback
+          </button>
+        </BackgroundCard>
+      </div>
+
+      {/* Feedback Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+            <button
+              onClick={() => setIsModalOpen(false)}
+              className="float-right text-gray-500 hover:text-gray-700"
+            >
+              ×
+            </button>
+            {feedbackSubmitted ? (
+              <div className="text-center">
+                <Typography variant="paragraph" className="text-green-600 py-4">
+                  Thank you for your feedback!
+                </Typography>
+                <button
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setFeedbackSubmitted(false);
+                  }}
+                  className="mt-4 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-200"
+                >
+                  Close
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleFeedbackSubmit} className="space-y-6">
+                <Typography variant="h4" className="text-center mb-4">Provide Feedback</Typography>
+                <div>
+                  <Typography variant="small" className="font-semibold text-gray-700 mb-2">
+                    Rate This Course
+                  </Typography>
+                  <StarRating value={feedback.rate} onChange={(rate) => setFeedback({ ...feedback, rate })} />
+                </div>
+                <div>
+                  <Typography variant="small" className="font-semibold text-gray-700 mb-2">
+                    Your Feedback
+                  </Typography>
+                  <textarea
+                    value={feedback.message}
+                    onChange={(e) => setFeedback({ ...feedback, message: e.target.value })}
+                    className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y text-gray-900"
+                    rows={4}
+                    maxLength={1000}
+                    placeholder="Share your thoughts about the course..."
+                    style={{ color: '#1f2937' }}
+                    required
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-200"
+                >
+                  Submit Feedback
+                </button>
+                {error && (
+                  <Typography variant="small" className="text-center text-red-600 mt-2">
+                    {error}
+                  </Typography>
+                )}
+              </form>
+            )}
+          </div>
         </div>
       )}
     </section>

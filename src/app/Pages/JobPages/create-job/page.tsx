@@ -7,6 +7,7 @@ const CreateJobPage = () => {
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
+      <br /><br></br><br></br>
       <main className="flex-grow p-4">
         <div className="container mx-auto">
         

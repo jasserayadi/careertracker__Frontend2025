@@ -3,6 +3,7 @@
 import { FixedPlugin, Footer, Navbar } from "@/app/Components";
 import EmployeeNavbar from "@/app/Components/employeeNavbar";
 import CourseCompletionStatus from "@/app/Components/UserComponent/CourseCompletionStatus";
+import EmpCourseCompletionStatus from "@/app/Components/UserComponent/EmpCourseCompletionStatus";
 
 interface CompletionStatusProps {
   params: {
@@ -19,7 +20,7 @@ export default function CompletionStatus({ params }: CompletionStatusProps) {
       <main className="flex-grow p-4">
         <div className="container mx-auto">
         
-              <CourseCompletionStatus />
+              <EmpCourseCompletionStatus />
           
         </div>
       </main>

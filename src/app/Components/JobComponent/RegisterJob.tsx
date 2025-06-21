@@ -1,7 +1,7 @@
 'use client';
 
-import { Card, CardBody, Button, Typography } from "@material-tailwind/react";
-import { CheckIcon, PlusIcon } from "@heroicons/react/24/outline";
+import { Card, CardBody, Button, Typography, Spinner } from "@material-tailwind/react";
+import { CheckIcon, PlusIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { useState } from 'react';
 
 interface Job {
@@ -83,23 +83,23 @@ const RegisterJob = () => {
   };
 
   return (
-    <div className="grid min-h-screen place-items-center">
-      <section className="container mx-auto px-10">
-        <div className="grid place-items-center pb-20 text-center">
-          <Typography variant="h2" color="blue-gray">
+    <main className="min-h-screen bg-gray-900 py-12 px-4 sm:px-6 lg:px-8 text-white">
+      <div className="max-w-3xl mx-auto">
+        <div className="text-center mb-12">
+          <Typography variant="h1" className="text-4xl md:text-5xl font-extrabold text-blue-300 mb-4">
             Create New Job
           </Typography>
-          <Typography variant="lead" className="mt-2 !text-gray-500 lg:w-5/12">
-            Fill in the job details to get started.
+          <Typography className="text-xl text-gray-400 max-w-3xl mx-auto">
+            Fill in the job details to get started
           </Typography>
         </div>
-        
-        <Card className="px-6 pb-5">
+
+        <Card className="bg-gray-800 border-2 border-blue-700 hover:border-blue-500 transition-all duration-300">
           <CardBody>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <Typography variant="h6" color="blue-gray" className="mb-2">
-                  Job Name:
+                <Typography variant="h5" className="mb-2 text-blue-300">
+                  Job Name
                 </Typography>
                 <input
                   type="text"
@@ -107,27 +107,29 @@ const RegisterJob = () => {
                   value={job.JobName}
                   onChange={handleChange}
                   required
-                  className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-lg"
+                  className="mt-1 block w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400"
+                  placeholder="Enter job title"
                 />
               </div>
               
               <div>
-                <Typography variant="h6" color="blue-gray" className="mb-2">
-                  Job Description:
+                <Typography variant="h5" className="mb-2 text-blue-300">
+                  Job Description
                 </Typography>
                 <textarea
                   name="JobDescription"
                   value={job.JobDescription}
                   onChange={handleChange}
                   required
-                  className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-lg"
+                  className="mt-1 block w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400"
                   rows={5}
+                  placeholder="Describe the job responsibilities and requirements"
                 />
               </div>
               
               <div>
-                <Typography variant="h6" color="blue-gray" className="mb-2">
-                  Required Skills:
+                <Typography variant="h5" className="mb-2 text-blue-300">
+                  Required Skills
                 </Typography>
                 <div className="flex gap-2">
                   <input
@@ -135,12 +137,13 @@ const RegisterJob = () => {
                     value={newSkill}
                     onChange={(e) => setNewSkill(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddSkill())}
-                    className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-lg"
+                    className="mt-1 block w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400"
+                    placeholder="Add required skills"
                   />
                   <Button
                     type="button"
                     onClick={handleAddSkill}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500"
                     disabled={!newSkill.trim()}
                   >
                     <PlusIcon className="h-5 w-5" /> Add
@@ -150,14 +153,14 @@ const RegisterJob = () => {
                 {job.RequiredSkills.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-2">
                     {job.RequiredSkills.map((skill, index) => (
-                      <div key={index} className="flex items-center gap-1 bg-blue-gray-50 px-3 py-1 rounded-full">
-                        <span>{skill}</span>
+                      <div key={index} className="flex items-center gap-1 bg-gray-700 px-3 py-1 rounded-full border border-blue-500">
+                        <span className="text-gray-300">{skill}</span>
                         <button
                           type="button"
                           onClick={() => handleRemoveSkill(skill)}
-                          className="text-red-500 hover:text-red-700"
+                          className="text-red-400 hover:text-red-300"
                         >
-                          ×
+                          <XMarkIcon className="h-4 w-4" />
                         </button>
                       </div>
                     ))}
@@ -168,12 +171,12 @@ const RegisterJob = () => {
               <Button
                 type="submit"
                 disabled={loading}
-                color="gray"
-                className="w-full mt-6"
+                className="w-full mt-6 bg-blue-600 hover:bg-blue-500"
               >
                 {loading ? (
-                  <div className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                  <div className="flex items-center justify-center gap-2">
+                    <Spinner className="h-5 w-5" />
+                    Processing...
                   </div>
                 ) : (
                   'Create Job'
@@ -181,15 +184,18 @@ const RegisterJob = () => {
               </Button>
               
               {error && (
-                <Typography variant="small" color="red" className="text-center">
-                  {error}
-                </Typography>
+                <div className="bg-red-900 bg-opacity-50 border-l-4 border-red-500 p-4 rounded">
+                  <Typography variant="small" color="red" className="flex items-center gap-2">
+                    <XMarkIcon className="h-5 w-5" />
+                    {error}
+                  </Typography>
+                </div>
               )}
               
               {success && (
-                <div className="flex items-center justify-center gap-2">
-                  <CheckIcon className="h-5 w-5 text-green-500" />
-                  <Typography variant="small" color="green">
+                <div className="bg-green-900 bg-opacity-50 border-l-4 border-green-500 p-4 rounded">
+                  <Typography variant="small" color="green" className="flex items-center gap-2">
+                    <CheckIcon className="h-5 w-5" />
                     {success}
                   </Typography>
                 </div>
@@ -197,8 +203,8 @@ const RegisterJob = () => {
             </form>
           </CardBody>
         </Card>
-      </section>
-    </div>
+      </div>
+    </main>
   );
 };
 

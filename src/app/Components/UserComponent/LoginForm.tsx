@@ -129,12 +129,7 @@ export function LoginForm() {
             </form>
 
             <div className="mt-6 flex flex-col items-center justify-center gap-2 sm:flex-row sm:gap-4">
-              <Typography variant="small" className="font-normal !text-gray-500">
-                Don't have an account?{' '}
-                <a href="/register" className="font-medium text-blue-500 transition-colors hover:text-blue-700">
-                  Register
-                </a>
-              </Typography>
+            
               <Typography variant="small" className="font-normal !text-gray-500">
                 <a href="/forgot-password" className="font-medium text-blue-500 transition-colors hover:text-blue-700">
                   Forgot password?

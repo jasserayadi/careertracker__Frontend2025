@@ -2,8 +2,8 @@
 
 import React, { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardBody, Button, Typography } from '@material-tailwind/react';
-import { CheckIcon } from '@heroicons/react/24/outline';
+import { Card, CardBody, Button, Typography, Spinner } from '@material-tailwind/react';
+import { CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 export function RegisterForm() {
   const [username, setUsername] = useState('');
@@ -82,176 +82,198 @@ export function RegisterForm() {
   ];
 
   return (
-    <div className="grid min-h-screen place-items-center">
-      <section className="container mx-auto px-4 sm:px-10">
-        <div className="grid place-items-center pb-10 text-center">
-          <Typography variant="h2" color="blue-gray" className="text-3xl md:text-4xl">
+    <main className="min-h-screen bg-gray-900 py-12 px-4 sm:px-6 lg:px-8 text-white">
+      <div className="max-w-3xl mx-auto">
+        <div className="text-center mb-12">
+          <Typography variant="h1" className="text-4xl md:text-5xl font-extrabold text-blue-300 mb-4">
             Create Your Account
           </Typography>
-          <Typography variant="lead" className="mt-2 !text-gray-500 lg:w-5/12 text-sm md:text-base">
-            Join our platform to access exclusive features and resources.
+          <Typography className="text-xl text-gray-400 max-w-3xl mx-auto">
+            Join our platform to access exclusive features and resources
           </Typography>
         </div>
-        
-        <Card className="px-6 pb-5">
+
+        <Card className="bg-gray-800 border-2 border-blue-700 hover:border-blue-500 transition-all duration-300">
           <CardBody>
             {error && (
-              <Typography color="red" className="mb-4 text-center">
-                {error}
-              </Typography>
+              <div className="bg-red-900 bg-opacity-50 border-l-4 border-red-500 p-4 rounded mb-6">
+                <Typography variant="small" color="red" className="flex items-center gap-2">
+                  <XMarkIcon className="h-5 w-5" />
+                  {error}
+                </Typography>
+              </div>
             )}
-            
-            <form onSubmit={handleSubmit}>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 {/* Username */}
                 <div>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="Username"
-                      className="peer w-full rounded-[7px] border border-gray-300 bg-transparent px-3 py-2.5 font-sans text-sm font-normal text-blue-gray-700 outline outline-0 transition-all placeholder-shown:border focus:border-2 focus:border-blue-500 focus:outline-0"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      required
-                    />
-                  </div>
+                  <Typography variant="h5" className="mb-2 text-blue-300">
+                    Username
+                  </Typography>
+                  <input
+                    type="text"
+                    placeholder="Enter your username"
+                    className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    required
+                  />
                 </div>
 
                 {/* Email */}
                 <div>
-                  <div className="relative">
-                    <input
-                      type="email"
-                      placeholder="Email"
-                      className="peer w-full rounded-[7px] border border-gray-300 bg-transparent px-3 py-2.5 font-sans text-sm font-normal text-blue-gray-700 outline outline-0 transition-all placeholder-shown:border focus:border-2 focus:border-blue-500 focus:outline-0"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
-                  </div>
+                  <Typography variant="h5" className="mb-2 text-blue-300">
+                    Email
+                  </Typography>
+                  <input
+                    type="email"
+                    placeholder="Enter your email"
+                    className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
                 </div>
 
                 {/* First Name */}
                 <div>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="First Name"
-                      className="peer w-full rounded-[7px] border border-gray-300 bg-transparent px-3 py-2.5 font-sans text-sm font-normal text-blue-gray-700 outline outline-0 transition-all placeholder-shown:border focus:border-2 focus:border-blue-500 focus:outline-0"
-                      value={firstname}
-                      onChange={(e) => setFirstname(e.target.value)}
-                      required
-                    />
-                  </div>
+                  <Typography variant="h5" className="mb-2 text-blue-300">
+                    First Name
+                  </Typography>
+                  <input
+                    type="text"
+                    placeholder="Enter your first name"
+                    className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400"
+                    value={firstname}
+                    onChange={(e) => setFirstname(e.target.value)}
+                    required
+                  />
                 </div>
 
                 {/* Last Name */}
                 <div>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="Last Name"
-                      className="peer w-full rounded-[7px] border border-gray-300 bg-transparent px-3 py-2.5 font-sans text-sm font-normal text-blue-gray-700 outline outline-0 transition-all placeholder-shown:border focus:border-2 focus:border-blue-500 focus:outline-0"
-                      value={lastname}
-                      onChange={(e) => setLastname(e.target.value)}
-                      required
-                    />
-                  </div>
+                  <Typography variant="h5" className="mb-2 text-blue-300">
+                    Last Name
+                  </Typography>
+                  <input
+                    type="text"
+                    placeholder="Enter your last name"
+                    className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400"
+                    value={lastname}
+                    onChange={(e) => setLastname(e.target.value)}
+                    required
+                  />
                 </div>
 
                 {/* Password */}
                 <div>
-                  <div className="relative">
-                    <input
-                      type="password"
-                      placeholder="Password"
-                      className="peer w-full rounded-[7px] border border-gray-300 bg-transparent px-3 py-2.5 font-sans text-sm font-normal text-blue-gray-700 outline outline-0 transition-all placeholder-shown:border focus:border-2 focus:border-blue-500 focus:outline-0"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                  </div>
+                  <Typography variant="h5" className="mb-2 text-blue-300">
+                    Password
+                  </Typography>
+                  <input
+                    type="password"
+                    placeholder="Create a password"
+                    className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
                 </div>
 
                 {/* Confirm Password */}
                 <div>
-                  <div className="relative">
-                    <input
-                      type="password"
-                      placeholder="Confirm Password"
-                      className="peer w-full rounded-[7px] border border-gray-300 bg-transparent px-3 py-2.5 font-sans text-sm font-normal text-blue-gray-700 outline outline-0 transition-all placeholder-shown:border focus:border-2 focus:border-blue-500 focus:outline-0"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      required
-                    />
-                  </div>
+                  <Typography variant="h5" className="mb-2 text-blue-300">
+                    Confirm Password
+                  </Typography>
+                  <input
+                    type="password"
+                    placeholder="Confirm your password"
+                    className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                  />
                 </div>
               </div>
-            
+
               {/* Password Requirements */}
-              <div className="mt-8">
-                <Typography variant="h6" color="blue-gray" className="mb-4">
+              <div>
+                <Typography variant="h5" className="mb-3 text-blue-300">
                   Password Requirements
                 </Typography>
                 <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                   {REQUIREMENTS.map((req, index) => (
                     <div key={index} className="flex items-center gap-2">
-                      <CheckIcon className="h-4 w-4 text-gray-900" strokeWidth={3} />
-                      <Typography variant="small" className="font-normal !text-gray-500">
+                      <CheckIcon className={`h-5 w-5 ${validatePassword(password) ? 'text-green-500' : 'text-gray-500'}`} />
+                      <Typography variant="small" className="text-gray-300">
                         {req}
                       </Typography>
                     </div>
                   ))}
                 </div>
               </div>
-            
-            {/* CV Upload */}
-<div className="mt-6">
-  <Typography variant="h6" color="blue-gray" className="mb-2">
-    Upload Your CV
-  </Typography>
-  <input
-    type="file"
-    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif"
-    onChange={(e) => setCvFile(e.target.files?.[0] || null)}
-    className="block w-full text-sm text-gray-500
-      file:mr-4 file:py-2 file:px-4
-      file:rounded-md file:border-0
-      file:text-sm file:font-semibold
-      file:bg-blue-50 file:text-blue-700
-      hover:file:bg-blue-100"
-    required
-  />
-  <Typography variant="small" className="mt-1 font-normal !text-gray-500">
-    Accepted formats: PDF, DOC, DOCX, JPG, JPEG, PNG, GIF
-  </Typography>
-</div>
+
+              {/* CV Upload */}
+              <div>
+                <Typography variant="h5" className="mb-2 text-blue-300">
+                  Upload Your CV
+                </Typography>
+                <div className="flex items-center gap-4">
+                  <label className="block">
+                    <span className="sr-only">Choose CV file</span>
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif"
+                      onChange={(e) => setCvFile(e.target.files?.[0] || null)}
+                      className="block w-full text-sm text-gray-400
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-lg file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-blue-600 file:text-white
+                        hover:file:bg-blue-500"
+                      required
+                    />
+                  </label>
+                  {cvFile && (
+                    <Typography variant="small" className="text-gray-300">
+                      {cvFile.name}
+                    </Typography>
+                  )}
+                </div>
+                <Typography variant="small" className="mt-1 text-gray-400">
+                  Accepted formats: PDF, DOC, DOCX, JPG, JPEG, PNG, GIF
+                </Typography>
+              </div>
 
               {/* Submit Button */}
-              <div className="mt-8">
-                <button
-                  type="submit"
-                  className={`w-full rounded-lg bg-blue-600 py-3 px-6 text-center align-middle font-sans text-xs font-bold uppercase text-white shadow-md shadow-blue-500/20 transition-all hover:shadow-lg hover:shadow-blue-500/40 focus:opacity-[0.85] focus:shadow-none active:opacity-[0.85] active:shadow-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none ${
-                    isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
-                  }`}
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? 'Creating Account...' : 'Create Account'}
-                </button>
-              </div>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full mt-6 bg-blue-600 hover:bg-blue-500"
+              >
+                {isSubmitting ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <Spinner className="h-5 w-5" />
+                    Creating Account...
+                  </div>
+                ) : (
+                  'Create Account'
+                )}
+              </Button>
             </form>
 
             {/* Login Link */}
-            <Typography variant="small" className="mt-4 text-center font-normal !text-gray-500">
+            <Typography variant="small" className="mt-6 text-center text-gray-400">
               Already have an account?{' '}
-              <a href="/login" className="font-medium text-blue-500 transition-colors hover:text-blue-700">
+              <a href="/login" className="font-medium text-blue-400 hover:text-blue-300 transition-colors">
                 Sign in
               </a>
             </Typography>
           </CardBody>
         </Card>
-      </section>
-    </div>
+      </div>
+    </main>
   );
 }
 

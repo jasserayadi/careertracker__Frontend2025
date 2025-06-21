@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from "react";
-import { Typography, Button } from "@material-tailwind/react";
-import { XMarkIcon, Bars3Icon, UserCircleIcon } from "@heroicons/react/24/solid";
+import { Typography } from "@material-tailwind/react";
+import { XMarkIcon, Bars3Icon, UserCircleIcon, TrophyIcon, ArrowRightOnRectangleIcon } from "@heroicons/react/24/solid";
 import Link from "next/link";
+import Image from "next/image";
 
 interface NavItemProps {
   children: React.ReactNode;
@@ -20,12 +21,41 @@ function NavItem({ children, to }: NavItemProps) {
   );
 }
 
+const getBadgeIcon = (badge: string | null) => {
+  switch (badge?.toLowerCase()) {
+    case 'amateur':
+      return <TrophyIcon className="h-5 w-5 text-gray-400" title="Silver Medal (Amateur)" />;
+    case 'beginner':
+      return <TrophyIcon className="h-5 w-5 text-amber-700" title="Bronze Medal (Beginner)" />;
+    case 'pro':
+      return <TrophyIcon className="h-5 w-5 text-yellow-400" title="Gold Medal (Pro)" />;
+    default:
+      return null;
+  }
+};
+
+const getBadgeMessage = (badge: string | null) => {
+  switch (badge?.toLowerCase()) {
+    case 'amateur':
+      return "Congratulations on earning the Silver Medal! You're making great progress.";
+    case 'beginner':
+      return "Well done on achieving the Bronze Medal! Keep learning and growing.";
+    case 'pro':
+      return "Amazing work! The Gold Medal reflects your expertise and dedication.";
+    default:
+      return "No badge earned yet. Keep working to unlock your first medal!";
+  }
+};
+
 export function EmployeeNavbar() {
   const [open, setOpen] = useState(false);
   const [isScrolling, setIsScrolling] = useState(false);
   const [user, setUser] = useState<{ username: string; userId: number } | null>(null);
+  const [badge, setBadge] = useState<string | null>(null);
   const [jobsDropdownOpen, setJobsDropdownOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const checkSession = async () => {
@@ -33,14 +63,14 @@ export function EmployeeNavbar() {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5054';
         const response = await fetch(`${apiUrl}/api/Auth/session`, {
           credentials: 'include',
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+          },
         });
         
         if (response.ok) {
           const data = await response.json();
-          console.log('Session data:', data); // Debug: Log session response
           setUser({ username: data.username, userId: data.userId });
-        } else {
-          console.warn('Session check failed:', response.status);
         }
       } catch (error) {
         console.error('Session check failed:', error);
@@ -49,13 +79,42 @@ export function EmployeeNavbar() {
     checkSession();
   }, []);
 
+  useEffect(() => {
+    const fetchBadge = async () => {
+      if (user?.userId) {
+        try {
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5054';
+          const response = await fetch(`${apiUrl}/api/Badge/${user.userId}/badge`, {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+            },
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            setBadge(data.badgeName || 'No Badge');
+          }
+        } catch (error) {
+          console.error('Badge fetch failed:', error);
+        }
+      }
+    };
+    fetchBadge();
+  }, [user]);
+
   const handleLogout = async () => {
     try {
-      await fetch(`http://localhost:5054/api/Auth/logout`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5054';
+      await fetch(`${apiUrl}/api/Auth/logout`, {
         method: 'POST',
         credentials: 'include',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+        },
       });
       setUser(null);
+      setBadge(null);
+      localStorage.removeItem('token');
       window.location.href = '/';
     } catch (error) {
       console.error('Logout failed:', error);
@@ -63,19 +122,31 @@ export function EmployeeNavbar() {
   };
 
   const handleOpen = () => setOpen(!open);
-  const toggleJobsDropdown = () => {
-    setJobsDropdownOpen(!jobsDropdownOpen);
-  };
+  const toggleJobsDropdown = () => setJobsDropdownOpen(!jobsDropdownOpen);
+  const openModal = () => badge && setIsModalOpen(true);
+  const closeModal = () => setIsModalOpen(false);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setJobsDropdownOpen(false);
       }
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        closeModal();
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeModal();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   useEffect(() => {
@@ -104,9 +175,18 @@ export function EmployeeNavbar() {
       isScrolling ? "bg-white shadow-md" : "bg-transparent"
     }`}>
       <div className="container mx-auto flex items-center justify-between p-4">
-        <Typography variant="h6" color={isScrolling ? "blue-gray" : "white"}>
-          Career Tracker
-        </Typography>
+        <div className="flex items-center">
+          <Image 
+            src="/CT/1631387546654-removebg-preview.png" 
+            alt="Career Tracker Logo"
+            width={40}
+            height={40}
+            className="mr-2"
+          />
+          <Typography variant="h6" color={isScrolling ? "blue-gray" : "white"}>
+            Career Tracker
+          </Typography>
+        </div>
         
         <ul className={`ml-10 hidden items-center gap-8 lg:flex ${
           isScrolling ? "text-gray-900" : "text-white"
@@ -117,33 +197,49 @@ export function EmployeeNavbar() {
           </NavItem>
         </ul>
 
-        {/* Desktop Buttons */}
+        {/* Updated Auth Section */}
         <div className="hidden items-center gap-4 lg:flex">
           {user ? (
-            <div className="flex items-center gap-2">
-              <UserCircleIcon className="h-5 w-5 text-white" />
-              <Typography variant="small" className="text-white">
-                {user.username}
-              </Typography>
-              <div onClick={handleLogout} className="cursor-pointer">
-                <Button color={isScrolling ? "gray" : "white"} size="sm">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <UserCircleIcon className={`h-5 w-5 ${isScrolling ? "text-gray-900" : "text-white"}`} />
+                <Typography 
+                  variant="small" 
+                  className={`font-medium ${isScrolling ? "text-gray-900" : "text-white"}`}
+                >
+                  {user.username}
+                </Typography>
+                {getBadgeIcon(badge) && (
+                  <button onClick={openModal} className="focus:outline-none">
+                    {getBadgeIcon(badge)}
+                  </button>
+                )}
+              </div>
+              <div 
+                onClick={handleLogout}
+                className="flex items-center gap-2 cursor-pointer"
+              >
+                <ArrowRightOnRectangleIcon className={`h-5 w-5 ${isScrolling ? "text-gray-900" : "text-white"}`} />
+                <Typography 
+                  variant="small" 
+                  className={`font-medium ${isScrolling ? "text-gray-900" : "text-white"}`}
+                >
                   Logout
-                </Button>
+                </Typography>
               </div>
             </div>
           ) : (
-            <>
-              <Link href="/login" passHref>
-                <Button color={isScrolling ? "gray" : "white"} size="sm">
+            <Link href="/login" passHref>
+              <div className="flex items-center gap-2 cursor-pointer">
+                <ArrowRightOnRectangleIcon className={`h-5 w-5 ${isScrolling ? "text-gray-900" : "text-white"}`} />
+                <Typography 
+                  variant="small" 
+                  className={`font-medium ${isScrolling ? "text-gray-900" : "text-white"}`}
+                >
                   Login
-                </Button>
-              </Link>
-              <Link href="/register" passHref>
-                <Button color={isScrolling ? "gray" : "white"} size="sm">
-                  Register
-                </Button>
-              </Link>
-            </>
+                </Typography>
+              </div>
+            </Link>
           )}
         </div>
 
@@ -162,74 +258,66 @@ export function EmployeeNavbar() {
         <div className="container mx-auto mt-4 rounded-lg bg-white px-6 py-5 lg:hidden">
           <ul className="flex flex-col gap-4 text-blue-gray-900">
             <NavItem to="/Pages">Home</NavItem>
-            <li>
-              <div 
-                className={`cursor-pointer px-4 py-3 rounded-md transition-all ${
-                  jobsDropdownOpen ? "bg-gray-100" : ""
-                }`}
-                onClick={toggleJobsDropdown}
-              >
-                Jobs
-              </div>
-              {jobsDropdownOpen && (
-                <div className="ml-4 mt-1 space-y-1 border-l-2 border-gray-200 pl-4">
-                  <Link href="/Pages/JobPages/Get-Jobs" passHref>
-                    <div 
-                      className="block py-2 px-3 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded-md transition-all active:scale-95"
-                      onClick={() => setJobsDropdownOpen(false)}
-                    >
-                      View Jobs
-                    </div>
-                  </Link>
-                  <Link href="/Pages/JobPages/create-job" passHref>
-                    <div 
-                      className="block py-2 px-3 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded-md transition-all active:scale-95"
-                      onClick={() => setJobsDropdownOpen(false)}
-                    >
-                      Create Job
-                    </div>
-                  </Link>
-                </div>
-              )}
-            </li>
-            <NavItem to="/Pages/FormationPages/Get_Formations">Courses</NavItem>
-            <NavItem to="/Pages/UserPages/GetUsers">Users</NavItem>
             <NavItem to={user ? `/Pages/UserPages/Profile/${user.userId}` : "/login"}>
               Profile
             </NavItem>
           </ul>
           
-          {/* Mobile Buttons */}
+          {/* Mobile Auth Section */}
           <div className="mt-4 flex flex-col gap-4">
             {user ? (
-              <div className="flex items-center gap-2">
-                <UserCircleIcon className="h-5 w-5" />
-                <Typography variant="small">{user.username}</Typography>
-                <div className="w-full" onClick={handleLogout}>
-                  <Button color="gray" size="sm" className="w-full">
-                    Logout
-                  </Button>
+              <div className="space-y-2">
+                <div className="flex items-center gap-3 p-2">
+                  <UserCircleIcon className="h-5 w-5" />
+                  <Typography variant="small" className="flex items-center gap-1">
+                    {user.username}
+                    {getBadgeIcon(badge) && (
+                      <button onClick={openModal} className="focus:outline-none">
+                        {getBadgeIcon(badge)}
+                      </button>
+                    )}
+                  </Typography>
+                </div>
+                <div 
+                  onClick={handleLogout}
+                  className="flex items-center gap-3 p-2 cursor-pointer"
+                >
+                  <ArrowRightOnRectangleIcon className="h-5 w-5" />
+                  <Typography variant="small">Logout</Typography>
                 </div>
               </div>
             ) : (
-              <>
-                <Link href="/login" passHref>
-                  <Button color="gray" size="sm" className="w-full">
-                    Login
-                  </Button>
-                </Link>
-                <Link href="/register" passHref>
-                  <Button color="gray" size="sm" className="w-full">
-                    Register
-                  </Button>
-                </Link>
-              </>
+              <Link href="/login" passHref>
+                <div className="flex items-center gap-3 p-2 cursor-pointer">
+                  <ArrowRightOnRectangleIcon className="h-5 w-5" />
+                  <Typography variant="small">Login</Typography>
+                </div>
+              </Link>
             )}
           </div>
         </div>
       )}
 
-      {/* Add these styles to your global CSS */}
+      {/* Badge Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div ref={modalRef} className="bg-white rounded-lg p-6 max-w-xs w-full shadow-lg">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">Your Badge</h2>
+              <button onClick={closeModal} className="text-gray-600 hover:text-gray-800 focus:outline-none">
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="flex flex-col items-center gap-4">
+              <div className="text-6xl">{getBadgeIcon(badge)}</div>
+              <Typography variant="paragraph" className="text-center text-gray-700">
+                {getBadgeMessage(badge)}
+              </Typography>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style jsx global>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(-5px) scale(0.95); }

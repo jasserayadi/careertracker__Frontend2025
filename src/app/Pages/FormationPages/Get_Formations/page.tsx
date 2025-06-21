@@ -17,6 +17,7 @@ export default function GetFormationsPage() {
         </div>
       </main>
       <FixedPlugin />
+      <br></br>      <br></br>      <br></br>      <br></br>
       <Footer />
     </div>
   );

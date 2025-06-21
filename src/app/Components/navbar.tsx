@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from "react";
-import { Typography, Button } from "@material-tailwind/react";
-import { XMarkIcon, Bars3Icon, UserCircleIcon } from "@heroicons/react/24/solid";
+import { Typography } from "@material-tailwind/react";
+import { XMarkIcon, Bars3Icon, UserCircleIcon, ArrowRightOnRectangleIcon, UserPlusIcon } from "@heroicons/react/24/solid";
 import Link from "next/link";
+import Image from "next/image";
 
 interface NavItemProps {
   children: React.ReactNode;
@@ -25,7 +26,9 @@ export function Navbar() {
   const [isScrolling, setIsScrolling] = useState(false);
   const [user, setUser] = useState<{username: string} | null>(null);
   const [jobsDropdownOpen, setJobsDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [usersDropdownOpen, setUsersDropdownOpen] = useState(false);
+  const jobsDropdownRef = useRef<HTMLDivElement>(null);
+  const usersDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const checkSession = async () => {
@@ -60,15 +63,16 @@ export function Navbar() {
   };
 
   const handleOpen = () => setOpen(!open);
-  const toggleJobsDropdown = () => {
-    setJobsDropdownOpen(!jobsDropdownOpen);
-  };
+  const toggleJobsDropdown = () => setJobsDropdownOpen(!jobsDropdownOpen);
+  const toggleUsersDropdown = () => setUsersDropdownOpen(!usersDropdownOpen);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (jobsDropdownRef.current && !jobsDropdownRef.current.contains(event.target as Node)) {
         setJobsDropdownOpen(false);
+      }
+      if (usersDropdownRef.current && !usersDropdownRef.current.contains(event.target as Node)) {
+        setUsersDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -81,6 +85,7 @@ export function Navbar() {
         setOpen(false);
       } else {
         setJobsDropdownOpen(false);
+        setUsersDropdownOpen(false);
       }
     };
     window.addEventListener("resize", handleResize);
@@ -91,6 +96,7 @@ export function Navbar() {
     const handleScroll = () => {
       setIsScrolling(window.scrollY > 0);
       setJobsDropdownOpen(false);
+      setUsersDropdownOpen(false);
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
@@ -101,17 +107,25 @@ export function Navbar() {
       isScrolling ? "bg-white shadow-md" : "bg-transparent"
     }`}>
       <div className="container mx-auto flex items-center justify-between p-4">
-        <Typography variant="h6" color={isScrolling ? "blue-gray" : "white"}>
-          Career Tracker
-        </Typography>
+        <div className="flex items-center">
+          <Image 
+            src="/CT/1631387546654-removebg-preview.png" 
+            alt="Career Tracker Logo"
+            width={40}
+            height={40}
+            className="mr-2"
+          />
+          <Typography variant="h6" color={isScrolling ? "blue-gray" : "white"}>
+            Career Tracker
+          </Typography>
+        </div>
         
         <ul className={`ml-10 hidden items-center gap-8 lg:flex ${
           isScrolling ? "text-gray-900" : "text-white"
         }`}>
           <NavItem to="/Pages">Home</NavItem>
           
-          {/* Jobs Dropdown - Centered with click effects */}
-          <li className="relative flex justify-center" ref={dropdownRef}>
+          <li className="relative flex justify-center" ref={jobsDropdownRef}>
             <div 
               className={`cursor-pointer px-4 py-2 rounded-md transition-all duration-200 ${
                 jobsDropdownOpen ? (isScrolling ? "bg-gray-100 text-gray-900" : "bg-white bg-opacity-20") : ""
@@ -151,34 +165,96 @@ export function Navbar() {
           </li>
           
           <NavItem to="/Pages/FormationPages/Get_Formations">Courses</NavItem>
-          <NavItem to="/Pages/UserPages/GetUsers">Users</NavItem>
+          <NavItem to="/Pages/RecommendPages/RecommendJob">Recommendations</NavItem>
+          
+          <li className="relative flex justify-center" ref={usersDropdownRef}>
+            <div 
+              className={`cursor-pointer px-4 py-2 rounded-md transition-all duration-200 ${
+                usersDropdownOpen ? (isScrolling ? "bg-gray-100 text-gray-900" : "bg-white bg-opacity-20") : ""
+              } hover:bg-opacity-10 hover:bg-white`}
+              onClick={toggleUsersDropdown}
+              onMouseEnter={() => setUsersDropdownOpen(true)}
+            >
+              Users
+            </div>
+            {usersDropdownOpen && (
+              <div 
+                className={`absolute top-full mt-2 w-56 rounded-lg shadow-xl ${
+                  isScrolling ? "bg-white" : "bg-white bg-opacity-95 backdrop-blur-sm"
+                } border border-gray-200 animate-fadeIn origin-top`}
+                onMouseLeave={() => setUsersDropdownOpen(false)}
+              >
+                <div className="py-1">
+                  <Link href="/Pages/UserPages/GetUsers" passHref>
+                    <div 
+                      className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer transition-all duration-200 active:scale-95"
+                      onClick={() => setUsersDropdownOpen(false)}
+                    >
+                      View users
+                    </div>
+                  </Link>
+                  <Link href="http://localhost:3000/Pages/register" passHref>
+                    <div 
+                      className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer transition-all duration-200 active:scale-95"
+                      onClick={() => setUsersDropdownOpen(false)}
+                    >
+                      Create a user
+                    </div>
+                  </Link>
+                </div>
+              </div>
+            )}
+          </li>
         </ul>
 
-        {/* Desktop Buttons */}
-        <div className="hidden items-center gap-4 lg:flex">
+        <div className="hidden items-center gap-6 lg:flex">
           {user ? (
-            <div className="flex items-center gap-2">
-              <UserCircleIcon className="h-5 w-5 text-white" />
-              <Typography variant="small" className="text-white">
-                {user.username}
-              </Typography>
-              <div onClick={handleLogout} className="cursor-pointer">
-                <Button color={isScrolling ? "gray" : "white"} size="sm">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <UserCircleIcon className={`h-5 w-5 ${isScrolling ? "text-gray-900" : "text-white"}`} />
+                <Typography 
+                  variant="small" 
+                  className={`font-medium ${isScrolling ? "text-gray-900" : "text-white"}`}
+                >
+                  {user.username}
+                </Typography>
+              </div>
+              <div 
+                onClick={handleLogout}
+                className="flex items-center gap-2 cursor-pointer"
+              >
+                <ArrowRightOnRectangleIcon className={`h-5 w-5 ${isScrolling ? "text-gray-900" : "text-white"}`} />
+                <Typography 
+                  variant="small" 
+                  className={`font-medium ${isScrolling ? "text-gray-900" : "text-white"}`}
+                >
                   Logout
-                </Button>
+                </Typography>
               </div>
             </div>
           ) : (
             <>
               <Link href="/login" passHref>
-                <Button color={isScrolling ? "gray" : "white"} size="sm">
-                  Login
-                </Button>
+                <div className="flex items-center gap-2 cursor-pointer">
+                  <ArrowRightOnRectangleIcon className={`h-5 w-5 ${isScrolling ? "text-gray-900" : "text-white"}`} />
+                  <Typography 
+                    variant="small" 
+                    className={`font-medium ${isScrolling ? "text-gray-900" : "text-white"}`}
+                  >
+                    Login
+                  </Typography>
+                </div>
               </Link>
               <Link href="/register" passHref>
-                <Button color={isScrolling ? "gray" : "white"} size="sm">
-                  Register
-                </Button>
+                <div className="flex items-center gap-2 cursor-pointer">
+                  <UserPlusIcon className={`h-5 w-5 ${isScrolling ? "text-gray-900" : "text-white"}`} />
+                  <Typography 
+                    variant="small" 
+                    className={`font-medium ${isScrolling ? "text-gray-900" : "text-white"}`}
+                  >
+                    Register
+                  </Typography>
+                </div>
               </Link>
             </>
           )}
@@ -194,13 +270,11 @@ export function Navbar() {
         </button>
       </div>
 
-      {/* Mobile Menu */}
       {open && (
         <div className="container mx-auto mt-4 rounded-lg bg-white px-6 py-5 lg:hidden">
           <ul className="flex flex-col gap-4 text-blue-gray-900">
             <NavItem to="/Pages">Home</NavItem>
             
-            {/* Mobile Jobs Dropdown */}
             <li>
               <div 
                 className={`cursor-pointer px-4 py-3 rounded-md transition-all ${
@@ -232,42 +306,76 @@ export function Navbar() {
               )}
             </li>
             
-            
             <NavItem to="/Pages/FormationPages/Get_Formations">Courses</NavItem>
-            <NavItem to="/Pages/UserPages/GetUsers">Users</NavItem>
+            <NavItem to="/Pages/RecommendPages/RecommendJob">Recommendations</NavItem>
+            
+            <li>
+              <div 
+                className={`cursor-pointer px-4 py-3 rounded-md transition-all ${
+                  usersDropdownOpen ? "bg-gray-100" : ""
+                }`}
+                onClick={toggleUsersDropdown}
+              >
+                Users
+              </div>
+              {usersDropdownOpen && (
+                <div className="ml-4 mt-1 space-y-1 border-l-2 border-gray-200 pl-4">
+                  <Link href="/Pages/UserPages/GetUsers" passHref>
+                    <div 
+                      className="block py-2 px-3 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded-md transition-all active:scale-95"
+                      onClick={() => setUsersDropdownOpen(false)}
+                    >
+                      View users
+                    </div>
+                  </Link>
+                  <Link href="http://localhost:3000/Pages/register" passHref>
+                    <div 
+                      className="block py-2 px-3 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded-md transition-all active:scale-95"
+                      onClick={() => setUsersDropdownOpen(false)}
+                    >
+                      Create a user
+                    </div>
+                  </Link>
+                </div>
+              )}
+            </li>
           </ul>
           
-          {/* Mobile Buttons */}
           <div className="mt-4 flex flex-col gap-4">
             {user ? (
-              <div className="flex items-center gap-2">
-                <UserCircleIcon className="h-5 w-5" />
-                <Typography variant="small">{user.username}</Typography>
-                <div className="w-full" onClick={handleLogout}>
-                  <Button color="gray" size="sm" className="w-full">
-                    Logout
-                  </Button>
+              <div className="space-y-2">
+                <div className="flex items-center gap-3 p-2">
+                  <UserCircleIcon className="h-5 w-5" />
+                  <Typography variant="small">{user.username}</Typography>
+                </div>
+                <div 
+                  onClick={handleLogout}
+                  className="flex items-center gap-3 p-2 cursor-pointer"
+                >
+                  <ArrowRightOnRectangleIcon className="h-5 w-5" />
+                  <Typography variant="small">Logout</Typography>
                 </div>
               </div>
             ) : (
-              <>
+              <div className="space-y-2">
                 <Link href="/login" passHref>
-                  <Button color="gray" size="sm" className="w-full">
-                    Login
-                  </Button>
+                  <div className="flex items-center gap-3 p-2 cursor-pointer">
+                    <ArrowRightOnRectangleIcon className="h-5 w-5" />
+                    <Typography variant="small">Login</Typography>
+                  </div>
                 </Link>
                 <Link href="/register" passHref>
-                  <Button color="gray" size="sm" className="w-full">
-                    Register
-                  </Button>
+                  <div className="flex items-center gap-3 p-2 cursor-pointer">
+                    <UserPlusIcon className="h-5 w-5" />
+                    <Typography variant="small">Register</Typography>
+                  </div>
                 </Link>
-              </>
+              </div>
             )}
           </div>
         </div>
       )}
 
-      {/* Add these styles to your global CSS */}
       <style jsx global>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(-5px) scale(0.95); }

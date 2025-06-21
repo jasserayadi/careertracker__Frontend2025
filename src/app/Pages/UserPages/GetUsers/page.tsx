@@ -12,7 +12,7 @@ const UsersPage = () => {
       {/* Main content */}
       <main className="min-h-screen">
         <br></br> <br></br>
-        <h1 className="text-center text-3xl font-bold my-8">Users Management</h1>
+        <h1 className="text-center text-3xl font-bold my-8"></h1>
         <GetUsers />
       </main>
 
