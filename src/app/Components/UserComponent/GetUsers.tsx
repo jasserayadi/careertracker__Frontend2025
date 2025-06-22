@@ -159,40 +159,44 @@ const GetUsers = () => {
     if (e.target.files?.[0]) setCvFile(e.target.files[0]);
   };
 
-  const updateUser = async () => {
-    if (!userToUpdate) return;
+const updateUser = async () => {
+  if (!userToUpdate) return;
 
-    try {
-      const formData = new FormData();
-      formData.append('username', updateForm.username);
-      formData.append('firstname', updateForm.firstname);
-      formData.append('lastname', updateForm.lastname);
-      formData.append('email', updateForm.email);
-      
-      if (updateForm.password) {
-        if (updateForm.password !== updateForm.confirmPassword) {
-          throw new Error("Passwords don't match");
-        }
-        formData.append('password', updateForm.password);
+  try {
+    const formData = new FormData();
+    formData.append('username', updateForm.username);
+    formData.append('firstname', updateForm.firstname);
+    formData.append('lastname', updateForm.lastname);
+    formData.append('email', updateForm.email);
+
+    if (updateForm.password) {
+      if (updateForm.password !== updateForm.confirmPassword) {
+        throw new Error("Passwords don't match");
       }
-      
-      if (cvFile) formData.append('cvFile', cvFile);
-
-      const response = await fetch(`http://localhost:5054/api/users/update/${userToUpdate.userId}`, {
-        method: 'PUT',
-        body: formData,
-      });
-
-      if (!response.ok) throw new Error(await response.text());
-
-      const updatedUser = await response.json();
-      setUsers(users.map(u => u.userId === updatedUser.userId ? updatedUser : u));
-      setUserToUpdate(null);
-      setCvFile(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Update failed');
+      formData.append('password', updateForm.password);
+      formData.append('confirmPassword', updateForm.confirmPassword); // Add this line
     }
-  };
+
+    if (cvFile) formData.append('cvFile', cvFile);
+
+    const response = await fetch(`http://localhost:5054/api/users/update/${userToUpdate.userId}`, {
+      method: 'PUT',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.title || errorData.message || 'Update failed');
+    }
+
+    const updatedUser = await response.json();
+    setUsers(users.map(u => u.userId === updatedUser.userId ? updatedUser : u));
+    setUserToUpdate(null);
+    setCvFile(null);
+  } catch (err) {
+    setError(err instanceof Error ? err.message : 'Update failed');
+  }
+};
 
   const deleteUser = async () => {
     if (userToDelete === null) return;

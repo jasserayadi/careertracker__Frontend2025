@@ -45,7 +45,7 @@ export function LoginForm() {
         router.push('http://localhost:3000/Pages/HomeEmployee');
       } else {
         console.warn('Unknown role:', roleName); // Debug
-        router.push('http://localhost:3000/Pages/HomeEmployee');
+        router.push('http://localhost:3000/Pages/HomeEmployeee');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
@@ -131,7 +131,7 @@ export function LoginForm() {
             <div className="mt-6 flex flex-col items-center justify-center gap-2 sm:flex-row sm:gap-4">
             
               <Typography variant="small" className="font-normal !text-gray-500">
-                <a href="/forgot-password" className="font-medium text-blue-500 transition-colors hover:text-blue-700">
+                <a href="forgot-password" className="font-medium text-blue-500 transition-colors hover:text-blue-700">
                   Forgot password?
                 </a>
               </Typography>
@@ -141,6 +141,6 @@ export function LoginForm() {
       </section>
     </div>
   );
-}
+}  
 
 export default LoginForm;
