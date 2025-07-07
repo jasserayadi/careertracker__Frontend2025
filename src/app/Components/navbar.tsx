@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from "react";
-import { Typography } from "@material-tailwind/react";
-import { XMarkIcon, Bars3Icon, UserCircleIcon, ArrowRightOnRectangleIcon, UserPlusIcon } from "@heroicons/react/24/solid";
-import Link from "next/link";
-import Image from "next/image";
+import React, { useEffect, useState, useRef } from 'react';
+import { Typography } from '@material-tailwind/react';
+import { XMarkIcon, Bars3Icon, UserCircleIcon, ArrowRightOnRectangleIcon, UserPlusIcon } from '@heroicons/react/24/solid';
+import Link from 'next/link';
+import Image from 'next/image';
 
 interface NavItemProps {
   children: React.ReactNode;
@@ -14,7 +14,7 @@ interface NavItemProps {
 function NavItem({ children, to }: NavItemProps) {
   return (
     <li>
-      <Link href={to || "#"} passHref>
+      <Link href={to || '#'} passHref>
         {children}
       </Link>
     </li>
@@ -24,34 +24,49 @@ function NavItem({ children, to }: NavItemProps) {
 export function Navbar() {
   const [open, setOpen] = useState(false);
   const [isScrolling, setIsScrolling] = useState(false);
-  const [user, setUser] = useState<{username: string} | null>(null);
+  const [user, setUser] = useState<{ username: string; roleName?: string; userId?: number } | null>(null);
   const [jobsDropdownOpen, setJobsDropdownOpen] = useState(false);
   const [usersDropdownOpen, setUsersDropdownOpen] = useState(false);
   const jobsDropdownRef = useRef<HTMLDivElement>(null);
   const usersDropdownRef = useRef<HTMLDivElement>(null);
 
+  // Check session on mount
   useEffect(() => {
     const checkSession = async () => {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5054';
-        const response = await fetch(`http://localhost:5054/api/Auth/session`, {
-          credentials: 'include',
+        const response = await fetch(`${apiUrl}/api/Auth/session`, {
+          credentials: 'include', // Send cookies
         });
-        
+
         if (response.ok) {
           const data = await response.json();
-          setUser({ username: data.username });
+          console.log('Navbar session data:', data); // Debug log
+          console.log('Current path:', window.location.pathname); // Debug log
+          setUser({ username: data.username, roleName: data.roleName, userId: data.userId });
+          // Redirect to employee profile if role is NewEmploye and not already on employee page
+          if (data.roleName === 'NewEmploye' && data.userId && !window.location.pathname.startsWith('/Pages/UserPages/EmpProfile')) {
+            console.log('Redirecting NewEmploye to /Pages/UserPages/EmpProfile/' + data.userId); // Debug log
+            window.location.href = `/Pages/UserPages/EmpProfile/${data.userId}`;
+          } else if (!data.roleName) {
+            console.warn('Navbar: roleName missing in session data, skipping role-based redirection');
+          }
+        } else if (response.status === 401) {
+          console.log('Navbar: Unauthorized, redirecting to login'); // Debug log
+          window.location.href = '/';
         }
       } catch (error) {
-        console.error('Session check failed:', error);
+        console.error('Navbar session check failed:', error);
       }
     };
     checkSession();
   }, []);
 
+  // Handle logout
   const handleLogout = async () => {
     try {
-      await fetch(`http://localhost:5054/api/Auth/logout`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5054';
+      await fetch(`${apiUrl}/api/Auth/logout`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -66,6 +81,7 @@ export function Navbar() {
   const toggleJobsDropdown = () => setJobsDropdownOpen(!jobsDropdownOpen);
   const toggleUsersDropdown = () => setUsersDropdownOpen(!usersDropdownOpen);
 
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (jobsDropdownRef.current && !jobsDropdownRef.current.contains(event.target as Node)) {
@@ -79,6 +95,7 @@ export function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Handle window resize
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 960) {
@@ -88,47 +105,52 @@ export function Navbar() {
         setUsersDropdownOpen(false);
       }
     };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Handle scroll
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolling(window.scrollY > 0);
       setJobsDropdownOpen(false);
       setUsersDropdownOpen(false);
     };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (
-    <nav className={`fixed top-0 z-50 w-full border-0 ${
-      isScrolling ? "bg-white shadow-md" : "bg-transparent"
-    }`}>
+    <nav
+      className={`fixed top-0 z-50 w-full border-0 ${isScrolling ? 'bg-white shadow-md' : 'bg-transparent'}`}
+    >
       <div className="container mx-auto flex items-center justify-between p-4">
         <div className="flex items-center">
-          <Image 
-            src="/CT/1631387546654-removebg-preview.png" 
+          <Image
+            src="/CT/1631387546654-removebg-preview.png"
             alt="Career Tracker Logo"
             width={40}
             height={40}
             className="mr-2"
           />
-          <Typography variant="h6" color={isScrolling ? "blue-gray" : "white"}>
+          <Typography variant="h6" color={isScrolling ? 'blue-gray' : 'white'}>
             Career Tracker
           </Typography>
         </div>
-        
-        <ul className={`ml-10 hidden items-center gap-8 lg:flex ${
-          isScrolling ? "text-gray-900" : "text-white"
-        }`}>
+
+        <ul
+          className={`ml-10 hidden items-center gap-8 lg:flex ${isScrolling ? 'text-gray-900' : 'text-white'}`}
+        >
           <NavItem to="/Pages">Home</NavItem>
-          
+
           <li className="relative flex justify-center" ref={jobsDropdownRef}>
-            <div 
+            <div
               className={`cursor-pointer px-4 py-2 rounded-md transition-all duration-200 ${
-                jobsDropdownOpen ? (isScrolling ? "bg-gray-100 text-gray-900" : "bg-white bg-opacity-20") : ""
+                jobsDropdownOpen
+                  ? isScrolling
+                    ? 'bg-gray-100 text-gray-900'
+                    : 'bg-white bg-opacity-20'
+                  : ''
               } hover:bg-opacity-10 hover:bg-white`}
               onClick={toggleJobsDropdown}
               onMouseEnter={() => setJobsDropdownOpen(true)}
@@ -136,15 +158,15 @@ export function Navbar() {
               Jobs
             </div>
             {jobsDropdownOpen && (
-              <div 
+              <div
                 className={`absolute top-full mt-2 w-56 rounded-lg shadow-xl ${
-                  isScrolling ? "bg-white" : "bg-white bg-opacity-95 backdrop-blur-sm"
+                  isScrolling ? 'bg-white' : 'bg-white bg-opacity-95 backdrop-blur-sm'
                 } border border-gray-200 animate-fadeIn origin-top`}
                 onMouseLeave={() => setJobsDropdownOpen(false)}
               >
                 <div className="py-1">
                   <Link href="/Pages/JobPages/Get-Jobs" passHref>
-                    <div 
+                    <div
                       className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer transition-all duration-200 active:scale-95"
                       onClick={() => setJobsDropdownOpen(false)}
                     >
@@ -152,7 +174,7 @@ export function Navbar() {
                     </div>
                   </Link>
                   <Link href="/Pages/JobPages/create-job" passHref>
-                    <div 
+                    <div
                       className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer transition-all duration-200 active:scale-95"
                       onClick={() => setJobsDropdownOpen(false)}
                     >
@@ -163,14 +185,18 @@ export function Navbar() {
               </div>
             )}
           </li>
-          
+
           <NavItem to="/Pages/FormationPages/Get_Formations">Courses</NavItem>
           <NavItem to="/Pages/RecommendPages/RecommendJob">Recommendations</NavItem>
-          
+
           <li className="relative flex justify-center" ref={usersDropdownRef}>
-            <div 
+            <div
               className={`cursor-pointer px-4 py-2 rounded-md transition-all duration-200 ${
-                usersDropdownOpen ? (isScrolling ? "bg-gray-100 text-gray-900" : "bg-white bg-opacity-20") : ""
+                usersDropdownOpen
+                  ? isScrolling
+                    ? 'bg-gray-100 text-gray-900'
+                    : 'bg-white bg-opacity-20'
+                  : ''
               } hover:bg-opacity-10 hover:bg-white`}
               onClick={toggleUsersDropdown}
               onMouseEnter={() => setUsersDropdownOpen(true)}
@@ -178,23 +204,23 @@ export function Navbar() {
               Users
             </div>
             {usersDropdownOpen && (
-              <div 
+              <div
                 className={`absolute top-full mt-2 w-56 rounded-lg shadow-xl ${
-                  isScrolling ? "bg-white" : "bg-white bg-opacity-95 backdrop-blur-sm"
+                  isScrolling ? 'bg-white' : 'bg-white bg-opacity-95 backdrop-blur-sm'
                 } border border-gray-200 animate-fadeIn origin-top`}
                 onMouseLeave={() => setUsersDropdownOpen(false)}
               >
                 <div className="py-1">
                   <Link href="/Pages/UserPages/GetUsers" passHref>
-                    <div 
+                    <div
                       className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer transition-all duration-200 active:scale-95"
                       onClick={() => setUsersDropdownOpen(false)}
                     >
                       View users
                     </div>
                   </Link>
-                  <Link href="http://localhost:3000/Pages/register" passHref>
-                    <div 
+                  <Link href="/Pages/register" passHref>
+                    <div
                       className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer transition-all duration-200 active:scale-95"
                       onClick={() => setUsersDropdownOpen(false)}
                     >
@@ -211,22 +237,21 @@ export function Navbar() {
           {user ? (
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <UserCircleIcon className={`h-5 w-5 ${isScrolling ? "text-gray-900" : "text-white"}`} />
-                <Typography 
-                  variant="small" 
-                  className={`font-medium ${isScrolling ? "text-gray-900" : "text-white"}`}
+                <UserCircleIcon className={`h-5 w-5 ${isScrolling ? 'text-gray-900' : 'text-white'}`} />
+                <Typography
+                  variant="small"
+                  className={`font-medium ${isScrolling ? 'text-gray-900' : 'text-white'}`}
                 >
                   {user.username}
                 </Typography>
               </div>
-              <div 
-                onClick={handleLogout}
-                className="flex items-center gap-2 cursor-pointer"
-              >
-                <ArrowRightOnRectangleIcon className={`h-5 w-5 ${isScrolling ? "text-gray-900" : "text-white"}`} />
-                <Typography 
-                  variant="small" 
-                  className={`font-medium ${isScrolling ? "text-gray-900" : "text-white"}`}
+              <div onClick={handleLogout} className="flex items-center gap-2 cursor-pointer">
+                <ArrowRightOnRectangleIcon
+                  className={`h-5 w-5 ${isScrolling ? 'text-gray-900' : 'text-white'}`}
+                />
+                <Typography
+                  variant="small"
+                  className={`font-medium ${isScrolling ? 'text-gray-900' : 'text-white'}`}
                 >
                   Logout
                 </Typography>
@@ -236,10 +261,12 @@ export function Navbar() {
             <>
               <Link href="/login" passHref>
                 <div className="flex items-center gap-2 cursor-pointer">
-                  <ArrowRightOnRectangleIcon className={`h-5 w-5 ${isScrolling ? "text-gray-900" : "text-white"}`} />
-                  <Typography 
-                    variant="small" 
-                    className={`font-medium ${isScrolling ? "text-gray-900" : "text-white"}`}
+                  <ArrowRightOnRectangleIcon
+                    className={`h-5 w-5 ${isScrolling ? 'text-gray-900' : 'text-white'}`}
+                  />
+                  <Typography
+                    variant="small"
+                    className={`font-medium ${isScrolling ? 'text-gray-900' : 'text-white'}`}
                   >
                     Login
                   </Typography>
@@ -247,10 +274,10 @@ export function Navbar() {
               </Link>
               <Link href="/register" passHref>
                 <div className="flex items-center gap-2 cursor-pointer">
-                  <UserPlusIcon className={`h-5 w-5 ${isScrolling ? "text-gray-900" : "text-white"}`} />
-                  <Typography 
-                    variant="small" 
-                    className={`font-medium ${isScrolling ? "text-gray-900" : "text-white"}`}
+                  <UserPlusIcon className={`h-5 w-5 ${isScrolling ? 'text-gray-900' : 'text-white'}`} />
+                  <Typography
+                    variant="small"
+                    className={`font-medium ${isScrolling ? 'text-gray-900' : 'text-white'}`}
                   >
                     Register
                   </Typography>
@@ -261,9 +288,7 @@ export function Navbar() {
         </div>
 
         <button
-          className={`ml-auto inline-block p-2 lg:hidden ${
-            isScrolling ? "text-gray-900" : "text-white"
-          }`}
+          className={`ml-auto inline-block p-2 lg:hidden ${isScrolling ? 'text-gray-900' : 'text-white'}`}
           onClick={handleOpen}
         >
           {open ? <XMarkIcon className="h-6 w-6" /> : <Bars3Icon className="h-6 w-6" />}
@@ -274,11 +299,11 @@ export function Navbar() {
         <div className="container mx-auto mt-4 rounded-lg bg-white px-6 py-5 lg:hidden">
           <ul className="flex flex-col gap-4 text-blue-gray-900">
             <NavItem to="/Pages">Home</NavItem>
-            
+
             <li>
-              <div 
+              <div
                 className={`cursor-pointer px-4 py-3 rounded-md transition-all ${
-                  jobsDropdownOpen ? "bg-gray-100" : ""
+                  jobsDropdownOpen ? 'bg-gray-100' : ''
                 }`}
                 onClick={toggleJobsDropdown}
               >
@@ -287,7 +312,7 @@ export function Navbar() {
               {jobsDropdownOpen && (
                 <div className="ml-4 mt-1 space-y-1 border-l-2 border-gray-200 pl-4">
                   <Link href="/Pages/JobPages/Get-Jobs" passHref>
-                    <div 
+                    <div
                       className="block py-2 px-3 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded-md transition-all active:scale-95"
                       onClick={() => setJobsDropdownOpen(false)}
                     >
@@ -295,7 +320,7 @@ export function Navbar() {
                     </div>
                   </Link>
                   <Link href="/Pages/JobPages/create-job" passHref>
-                    <div 
+                    <div
                       className="block py-2 px-3 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded-md transition-all active:scale-95"
                       onClick={() => setJobsDropdownOpen(false)}
                     >
@@ -305,14 +330,14 @@ export function Navbar() {
                 </div>
               )}
             </li>
-            
+
             <NavItem to="/Pages/FormationPages/Get_Formations">Courses</NavItem>
             <NavItem to="/Pages/RecommendPages/RecommendJob">Recommendations</NavItem>
-            
+
             <li>
-              <div 
+              <div
                 className={`cursor-pointer px-4 py-3 rounded-md transition-all ${
-                  usersDropdownOpen ? "bg-gray-100" : ""
+                  usersDropdownOpen ? 'bg-gray-100' : ''
                 }`}
                 onClick={toggleUsersDropdown}
               >
@@ -321,15 +346,15 @@ export function Navbar() {
               {usersDropdownOpen && (
                 <div className="ml-4 mt-1 space-y-1 border-l-2 border-gray-200 pl-4">
                   <Link href="/Pages/UserPages/GetUsers" passHref>
-                    <div 
+                    <div
                       className="block py-2 px-3 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded-md transition-all active:scale-95"
                       onClick={() => setUsersDropdownOpen(false)}
                     >
                       View users
                     </div>
                   </Link>
-                  <Link href="http://localhost:3000/Pages/register" passHref>
-                    <div 
+                  <Link href="/Pages/register" passHref>
+                    <div
                       className="block py-2 px-3 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded-md transition-all active:scale-95"
                       onClick={() => setUsersDropdownOpen(false)}
                     >
@@ -340,7 +365,7 @@ export function Navbar() {
               )}
             </li>
           </ul>
-          
+
           <div className="mt-4 flex flex-col gap-4">
             {user ? (
               <div className="space-y-2">
@@ -348,10 +373,7 @@ export function Navbar() {
                   <UserCircleIcon className="h-5 w-5" />
                   <Typography variant="small">{user.username}</Typography>
                 </div>
-                <div 
-                  onClick={handleLogout}
-                  className="flex items-center gap-3 p-2 cursor-pointer"
-                >
+                <div onClick={handleLogout} className="flex items-center gap-3 p-2 cursor-pointer">
                   <ArrowRightOnRectangleIcon className="h-5 w-5" />
                   <Typography variant="small">Logout</Typography>
                 </div>
@@ -364,7 +386,7 @@ export function Navbar() {
                     <Typography variant="small">Login</Typography>
                   </div>
                 </Link>
-                <Link href="/register" passHref>
+                <Link href="/Pages/register" passHref>
                   <div className="flex items-center gap-3 p-2 cursor-pointer">
                     <UserPlusIcon className="h-5 w-5" />
                     <Typography variant="small">Register</Typography>
@@ -378,8 +400,14 @@ export function Navbar() {
 
       <style jsx global>{`
         @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-5px) scale(0.95); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
+          from {
+            opacity: 0;
+            transform: translateY(-5px) scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
         }
         .animate-fadeIn {
           animation: fadeIn 0.2s ease-out forwards;

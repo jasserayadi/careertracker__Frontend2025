@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from "react";
-import { Typography } from "@material-tailwind/react";
-import { XMarkIcon, Bars3Icon, UserCircleIcon, TrophyIcon, ArrowRightOnRectangleIcon } from "@heroicons/react/24/solid";
-import Link from "next/link";
-import Image from "next/image";
+import React, { useEffect, useState, useRef } from 'react';
+import { Typography } from '@material-tailwind/react';
+import { XMarkIcon, Bars3Icon, UserCircleIcon, TrophyIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/solid';
+import Link from 'next/link';
+import Image from 'next/image';
 
 interface NavItemProps {
   children: React.ReactNode;
@@ -14,7 +14,7 @@ interface NavItemProps {
 function NavItem({ children, to }: NavItemProps) {
   return (
     <li>
-      <Link href={to || "#"} passHref>
+      <Link href={to || '#'} passHref>
         {children}
       </Link>
     </li>
@@ -39,60 +39,79 @@ const getBadgeMessage = (badge: string | null) => {
     case 'amateur':
       return "Congratulations on earning the Silver Medal! You're making great progress.";
     case 'beginner':
-      return "Well done on achieving the Bronze Medal! Keep learning and growing.";
+      return 'Well done on achieving the Bronze Medal! Keep learning and growing.';
     case 'pro':
-      return "Amazing work! The Gold Medal reflects your expertise and dedication.";
+      return 'Amazing work! The Gold Medal reflects your expertise and dedication.';
     default:
-      return "No badge earned yet. Keep working to unlock your first medal!";
+      return 'No badge earned yet. Keep working to unlock your first medal!';
   }
 };
 
 export function EmployeeNavbar() {
   const [open, setOpen] = useState(false);
   const [isScrolling, setIsScrolling] = useState(false);
-  const [user, setUser] = useState<{ username: string; userId: number } | null>(null);
+  const [user, setUser] = useState<{ username: string; userId: number; roleName?: string } | null>(null);
   const [badge, setBadge] = useState<string | null>(null);
   const [jobsDropdownOpen, setJobsDropdownOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
+  // Check session on mount
   useEffect(() => {
     const checkSession = async () => {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5054';
         const response = await fetch(`${apiUrl}/api/Auth/session`, {
-          credentials: 'include',
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
-          },
+          credentials: 'include', // Send cookies
         });
-        
+
         if (response.ok) {
           const data = await response.json();
-          setUser({ username: data.username, userId: data.userId });
+          console.log('EmployeeNavbar session data:', data); // Debug log
+          console.log('Current path:', window.location.pathname); // Debug log
+          setUser({ username: data.username, userId: data.userId, roleName: data.roleName });
+          // Redirect to admin page if role is Admin and not already on admin page
+          if (data.roleName === 'Admin' && !window.location.pathname.startsWith('/Pages')) {
+            console.log('Redirecting Admin to /Pages'); // Debug log
+            window.location.href = '/Pages';
+          } else if (!data.roleName) {
+            console.warn('EmployeeNavbar: roleName missing in session data, skipping role-based redirection');
+          }
+        } else if (response.status === 401) {
+          console.log('EmployeeNavbar: Unauthorized, redirecting to login'); // Debug log
+          window.location.href = '/';
         }
       } catch (error) {
-        console.error('Session check failed:', error);
+        console.error('EmployeeNavbar session check failed:', error);
       }
     };
     checkSession();
   }, []);
 
+  // Fetch badge when user is set
   useEffect(() => {
     const fetchBadge = async () => {
       if (user?.userId) {
         try {
+          const token = localStorage.getItem('token');
+          console.log('Fetching badge with token:', token); // Debug log
           const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5054';
           const response = await fetch(`${apiUrl}/api/Badge/${user.userId}/badge`, {
             headers: {
-              Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+              Authorization: `Bearer ${token || ''}`,
             },
           });
-          
+
           if (response.ok) {
             const data = await response.json();
             setBadge(data.badgeName || 'No Badge');
+          } else if (response.status === 401) {
+            console.log('Badge fetch: Unauthorized, clearing token and redirecting'); // Debug log
+            localStorage.removeItem('token');
+            window.location.href = '/';
+          } else {
+            console.error('Badge fetch failed with status:', response.status);
           }
         } catch (error) {
           console.error('Badge fetch failed:', error);
@@ -102,19 +121,17 @@ export function EmployeeNavbar() {
     fetchBadge();
   }, [user]);
 
+  // Handle logout
   const handleLogout = async () => {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5054';
       await fetch(`${apiUrl}/api/Auth/logout`, {
         method: 'POST',
         credentials: 'include',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
-        },
       });
       setUser(null);
       setBadge(null);
-      localStorage.removeItem('token');
+      localStorage.removeItem('token'); // Clear token on logout
       window.location.href = '/';
     } catch (error) {
       console.error('Logout failed:', error);
@@ -126,6 +143,7 @@ export function EmployeeNavbar() {
   const openModal = () => badge && setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
 
+  // Close dropdowns and modal on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -139,6 +157,7 @@ export function EmployeeNavbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Close modal on Escape key
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -149,6 +168,7 @@ export function EmployeeNavbar() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Handle window resize
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 960) {
@@ -157,55 +177,55 @@ export function EmployeeNavbar() {
         setJobsDropdownOpen(false);
       }
     };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Handle scroll
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolling(window.scrollY > 0);
       setJobsDropdownOpen(false);
     };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (
-    <nav className={`fixed top-0 z-50 w-full border-0 ${
-      isScrolling ? "bg-white shadow-md" : "bg-transparent"
-    }`}>
+    <nav
+      className={`fixed top-0 z-50 w-full border-0 ${isScrolling ? 'bg-white shadow-md' : 'bg-transparent'}`}
+    >
       <div className="container mx-auto flex items-center justify-between p-4">
         <div className="flex items-center">
-          <Image 
-            src="/CT/1631387546654-removebg-preview.png" 
+          <Image
+            src="/CT/1631387546654-removebg-preview.png"
             alt="Career Tracker Logo"
             width={40}
             height={40}
             className="mr-2"
           />
-          <Typography variant="h6" color={isScrolling ? "blue-gray" : "white"}>
+          <Typography variant="h6" color={isScrolling ? 'blue-gray' : 'white'}>
             Career Tracker
           </Typography>
         </div>
-        
-        <ul className={`ml-10 hidden items-center gap-8 lg:flex ${
-          isScrolling ? "text-gray-900" : "text-white"
-        }`}>
+
+        <ul
+          className={`ml-10 hidden items-center gap-8 lg:flex ${isScrolling ? 'text-gray-900' : 'text-white'}`}
+        >
           <NavItem to="/Pages">Home</NavItem>
-          <NavItem to={user ? `/Pages/UserPages/EmpProfile/${user.userId}` : "/login"}>
+          <NavItem to={user ? `/Pages/UserPages/EmpProfile/${user.userId}` : '/login'}>
             Profile
           </NavItem>
         </ul>
 
-        {/* Updated Auth Section */}
         <div className="hidden items-center gap-4 lg:flex">
           {user ? (
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <UserCircleIcon className={`h-5 w-5 ${isScrolling ? "text-gray-900" : "text-white"}`} />
-                <Typography 
-                  variant="small" 
-                  className={`font-medium ${isScrolling ? "text-gray-900" : "text-white"}`}
+                <UserCircleIcon className={`h-5 w-5 ${isScrolling ? 'text-gray-900' : 'text-white'}`} />
+                <Typography
+                  variant="small"
+                  className={`font-medium ${isScrolling ? 'text-gray-900' : 'text-white'}`}
                 >
                   {user.username}
                 </Typography>
@@ -215,14 +235,13 @@ export function EmployeeNavbar() {
                   </button>
                 )}
               </div>
-              <div 
-                onClick={handleLogout}
-                className="flex items-center gap-2 cursor-pointer"
-              >
-                <ArrowRightOnRectangleIcon className={`h-5 w-5 ${isScrolling ? "text-gray-900" : "text-white"}`} />
-                <Typography 
-                  variant="small" 
-                  className={`font-medium ${isScrolling ? "text-gray-900" : "text-white"}`}
+              <div onClick={handleLogout} className="flex items-center gap-2 cursor-pointer">
+                <ArrowRightOnRectangleIcon
+                  className={`h-5 w-5 ${isScrolling ? 'text-gray-900' : 'text-white'}`}
+                />
+                <Typography
+                  variant="small"
+                  className={`font-medium ${isScrolling ? 'text-gray-900' : 'text-white'}`}
                 >
                   Logout
                 </Typography>
@@ -231,10 +250,12 @@ export function EmployeeNavbar() {
           ) : (
             <Link href="/login" passHref>
               <div className="flex items-center gap-2 cursor-pointer">
-                <ArrowRightOnRectangleIcon className={`h-5 w-5 ${isScrolling ? "text-gray-900" : "text-white"}`} />
-                <Typography 
-                  variant="small" 
-                  className={`font-medium ${isScrolling ? "text-gray-900" : "text-white"}`}
+                <ArrowRightOnRectangleIcon
+                  className={`h-5 w-5 ${isScrolling ? 'text-gray-900' : 'text-white'}`}
+                />
+                <Typography
+                  variant="small"
+                  className={`font-medium ${isScrolling ? 'text-gray-900' : 'text-white'}`}
                 >
                   Login
                 </Typography>
@@ -244,26 +265,22 @@ export function EmployeeNavbar() {
         </div>
 
         <button
-          className={`ml-auto inline-block p-2 lg:hidden ${
-            isScrolling ? "text-gray-900" : "text-white"
-          }`}
+          className={`ml-auto inline-block p-2 lg:hidden ${isScrolling ? 'text-gray-900' : 'text-white'}`}
           onClick={handleOpen}
         >
           {open ? <XMarkIcon className="h-6 w-6" /> : <Bars3Icon className="h-6 w-6" />}
         </button>
       </div>
 
-      {/* Mobile Menu */}
       {open && (
         <div className="container mx-auto mt-4 rounded-lg bg-white px-6 py-5 lg:hidden">
           <ul className="flex flex-col gap-4 text-blue-gray-900">
             <NavItem to="/Pages">Home</NavItem>
-            <NavItem to={user ? `/Pages/UserPages/Profile/${user.userId}` : "/login"}>
+            <NavItem to={user ? `/Pages/UserPages/EmpProfile/${user.userId}` : '/login'}>
               Profile
             </NavItem>
           </ul>
-          
-          {/* Mobile Auth Section */}
+
           <div className="mt-4 flex flex-col gap-4">
             {user ? (
               <div className="space-y-2">
@@ -278,10 +295,7 @@ export function EmployeeNavbar() {
                     )}
                   </Typography>
                 </div>
-                <div 
-                  onClick={handleLogout}
-                  className="flex items-center gap-3 p-2 cursor-pointer"
-                >
+                <div onClick={handleLogout} className="flex items-center gap-3 p-2 cursor-pointer">
                   <ArrowRightOnRectangleIcon className="h-5 w-5" />
                   <Typography variant="small">Logout</Typography>
                 </div>
@@ -298,7 +312,6 @@ export function EmployeeNavbar() {
         </div>
       )}
 
-      {/* Badge Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div ref={modalRef} className="bg-white rounded-lg p-6 max-w-xs w-full shadow-lg">
@@ -320,8 +333,14 @@ export function EmployeeNavbar() {
 
       <style jsx global>{`
         @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-5px) scale(0.95); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
+          from {
+            opacity: 0;
+            transform: translateY(-5px) scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
         }
         .animate-fadeIn {
           animation: fadeIn 0.2s ease-out forwards;

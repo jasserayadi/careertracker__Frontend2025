@@ -127,7 +127,7 @@ export function LoginForm() {
                 </button>
               </div>
             </form>
-
+            
             <div className="mt-6 flex flex-col items-center justify-center gap-2 sm:flex-row sm:gap-4">
             
               <Typography variant="small" className="font-normal !text-gray-500">

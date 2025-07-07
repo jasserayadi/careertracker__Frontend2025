@@ -117,6 +117,17 @@ const styles = `
     animation: countUp 1s ease-out forwards;
   }
 
+  .green-chip {
+    --tw-bg-opacity: 1;
+    background-color: rgb(34 197 94 / 0.1);
+    color: rgb(34 197 94);
+    border-color: rgb(34 197 94);
+  }
+
+  .green-chip:hover {
+    background-color: rgb(34 197 94 / 0.2);
+  }
+
   .red-chip {
     --tw-bg-opacity: 1;
     background-color: transparent;
@@ -565,7 +576,7 @@ const GetUsers = () => {
                               <Chip
                                 value={skill}
                                 color="green"
-                                className="text-xs px-2 py-1"
+                                className="green-chip text-xs px-2 py-1"
                               />
                             </Tooltip>
                           ))}

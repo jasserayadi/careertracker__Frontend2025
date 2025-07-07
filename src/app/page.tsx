@@ -6,7 +6,7 @@ import LoginForm from '@/app/Components/UserComponent/LoginForm';
 const LoginPage = () => {
   return (
     <div>
-      <Navbar />
+    
       <br /><br /><br />
       <LoginForm />
       <br /><br /><br /><br /><br />
